@@ -1,0 +1,52 @@
+.leave-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.leave-table thead {
+  background: #4f46e5;
+  color: white;
+}
+
+.leave-table th,
+.leave-table td {
+  padding: 14px;
+  text-align: left;
+  font-size: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.leave-table tbody tr:hover {
+  background: #f5f5ff;
+}
+
+/* Status Colors */
+.status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: white;
+}
+
+.status.approved {
+  background: #22c55e; /* Green */
+}
+
+.status.pending {
+  background: #eab308; /* Yellow */
+}
+
+.status.rejected {
+  background: #ef4444; /* Red */
+}
+
+/* Loading text */
+.loading {
+  font-size: 18px;
+  text-align: center;
+  padding: 20px;
+}
