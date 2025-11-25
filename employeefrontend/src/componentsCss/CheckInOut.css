@@ -1,0 +1,221 @@
+.checkinout-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  font-family: "Inter", sans-serif;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+}
+
+.card-header h2 {
+  font-size: 1.3rem;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.card-header p {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.time-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+}
+
+.time-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.clock-icon {
+  font-size: 2rem;
+}
+
+.label {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.current-time {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.status-badge {
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.status-badge.in {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.status-badge.out {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.time-card {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.time-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.button-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor:pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  border: none;
+}
+
+.btn-primary:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: white;
+  border: 2px solid #3b82f6;
+  color: #3b82f6;
+}
+
+.btn-outline:disabled {
+  border-color: #bfdbfe;
+  color: #bfdbfe;
+  cursor: not-allowed;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.history-table th,
+.history-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.history-table th {
+  font-weight: 600;
+  color: #475569;
+}
+
+.duration-badge {
+  background: #f1f5f9;
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #64748b;
+}
+
+.clock-large {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+.employee-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.employee-input label {
+  font-weight: 600;
+  color: #334155;
+}
+
+.employee-input input {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.employee-input input:focus {
+  border-color: #3b82f6;
+}
+
+.loading {
+  text-align: center;
+  padding: 1rem;
+  color: #475569;
+}
+
+.status-badge-table.present {
+  background: #dcfce7;
+  color: #166534;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.status-badge-table.absent {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.status-badge-table.half-day {
+  background: #fef9c3;
+  color: #92400e;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
