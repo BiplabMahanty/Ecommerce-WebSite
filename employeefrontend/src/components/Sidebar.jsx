@@ -6,6 +6,7 @@ import EmployeePanel from "./EmployeePanel";
 import LeaveAdd from "./LeaveAdd";
 import Logout from "./LogOut";
 import DashboardPage from "./Dashboard";
+import AttendanceReportsPage from "./AttendanceDetails"
 import { get } from "mongoose";
 import axios from "axios";
 
@@ -117,6 +118,16 @@ export default function Sidebar() {
             >
               <Calendar size={18} /> Leave
             </button>
+            <button
+              className={`w-full flex items-center gap-3 p-3 rounded-lg ${
+                activePage === "attendanceDetails"
+                  ? "bg-yellow-500 text-black"
+                  : "hover:bg-white/10"
+              }`}
+              onClick={() => setActivePage("attendanceDetails")}
+            >
+              <Calendar size={18} /> Attendance Details
+            </button>
           </nav>
         </div>
 
@@ -138,6 +149,8 @@ export default function Sidebar() {
         {activePage === "leave" && <LeaveAdd />}
         {activePage === "logout" && <Logout />}
         {activePage === "dashboard" && <DashboardPage />}
+        {activePage === "attendanceDetails" && <AttendanceReportsPage />}
+        
       </div>
     </div>
   );

@@ -95,8 +95,8 @@ export default function LeaveRequestPage() {
       <h2 className="text-2xl font-bold mb-6">Leave Request</h2>
 
       {/* Leave Form */}
-      <div className="bg-white p-8 rounded-2xl shadow-md mb-10">
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="bg-white w-80 p-4 rounded-xl shadow-md mb-5">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Leave Type */}
           <div>
             <label className="block mb-2 font-medium">Select Leave Type</label>
@@ -104,7 +104,7 @@ export default function LeaveRequestPage() {
               name="type"
               value={type}
               onChange={(e) => setType(e.target.value)} required
-              className="w-full p-3 border rounded-xl"
+              className="w-23 p-1 border rounded-xl"
             >
               <option value="">Select Type</option>
             <option value="casual">Casual</option>
@@ -121,7 +121,7 @@ export default function LeaveRequestPage() {
               type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-              className="w-full p-3 border rounded-xl"
+              className="w-23 p-1 border rounded-xl"
             />
           </div>
 
@@ -133,7 +133,7 @@ export default function LeaveRequestPage() {
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             required
-              className="w-full p-3 border rounded-xl"
+              className="w-23 p-1 border rounded-xl"
             />
           </div>
 
@@ -145,7 +145,7 @@ export default function LeaveRequestPage() {
             onChange={(e) => setReason(e.target.value)}
             placeholder="Enter your reason"
               rows="3"
-              className="w-full p-3 border rounded-xl"
+              className="w-23 p-1 border rounded-xl"
             ></textarea>
           </div>
 
