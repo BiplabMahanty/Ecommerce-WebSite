@@ -12,31 +12,7 @@ export default function AttendanceReportsPage() {
     console.log("attendance",Attendance)
 
 
-    const sampleData = [
-        {
-            id: 1,
-            date: "2025-01-10",
-            checkIn: "09:10 AM",
-            checkOut: "06:05 PM",
-            totalHours: "8h 55m",
-            status: "present",
-            late: false,
-            early: false,
-            leave: false,
-        },
-        {
-            id: 2,
-            date: "2025-01-11",
-            checkIn: "09:45 AM",
-            checkOut: "05:30 PM",
-            totalHours: "7h 45m",
-            status: "present",
-            late: true,
-            early: true,
-            leave: false,
-        },
-    ];
-
+   
     const filterData = () => {
         switch (activeReport) {
             case "monthly":
@@ -51,7 +27,7 @@ export default function AttendanceReportsPage() {
                 return Attendance;
         }
     };
-     useEffect(() => {
+useEffect(() => {
           if (!employeeId) {
             alert("Please login first");
             return;
