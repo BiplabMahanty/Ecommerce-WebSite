@@ -20,6 +20,12 @@ const { getLeaveTotal } = require("../adminConroller/getTotalLeave");
 const { addEmpInRockstar, addShift } = require("../adminConroller/addShiftAndEmployee");
 const { getShift } = require("../adminConroller/getShift");
 const { editLeaveRequest } = require("../adminConroller/editLeaveRequest");
+const { getAttaendanceByMonthOverTime } = require("../adminConroller/getAttendanceByOvertime");
+const { getAttaendanceByMonthLate } = require("../adminConroller/getAttendanceByLate");
+const employeePayment = require("../adminConroller/employeePayment");
+const paySalary = require("../adminConroller/employeePayment");
+const {getPayment} = require("../adminConroller/getPayment");
+const { getAllPayment } = require("../adminConroller/getAllPayment");
 
 
 
@@ -43,7 +49,7 @@ router.post("/verifyLeaveRequest", verifyLeaveRequest);
 router.post("/addRockstarShift", addRockstarShift);
 
 
-router.get("/getAllEmployee", getEmployee);
+router.get("/getAllEmployee",getEmployee);
 router.get("/getLeave", getLeave);
 
 
@@ -67,6 +73,15 @@ router.post("/addShift", addShift);
 router.get("/getShift",getShift)
 
 router.post("/editLeaveRequest",editLeaveRequest)
+
+router.get("/getAttaendanceByMonthOverTime/:id",getAttaendanceByMonthOverTime)
+
+router.get("/getAttaendanceByMonthLate/:id",getAttaendanceByMonthLate)
+
+router.post("/paySalary",paySalary)
+
+router.get("/getPayment/:id",getPayment)
+router.get("/getAllPayments",getAllPayment)
 
 
 module.exports=router

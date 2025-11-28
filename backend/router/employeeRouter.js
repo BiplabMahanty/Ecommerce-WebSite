@@ -9,7 +9,8 @@
     const { login } = require("../employeeController/login");
     const { getLeaveRequest } = require("../employeeController/getLeaveRequest");
     const { ChangePassword } = require("../employeeController/changePassword");
-const { getEmployee } = require("../employeeController/getEmployee");
+    const { getEmployee } = require("../employeeController/getEmployee");
+    const { getAttaendanceByMonth } = require("../employeeController/getAttendanceByMonth");
     // Employee check-in
 
     router.post("/login",login)
@@ -25,6 +26,8 @@ const { getEmployee } = require("../employeeController/getEmployee");
 
 
     router.get("/getEmployee/:employeeId", getEmployee);
+
+    router.get("/attendance/:id", getAttaendanceByMonth);
 
 
     module.exports = router;

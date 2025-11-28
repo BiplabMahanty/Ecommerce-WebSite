@@ -1,15 +1,15 @@
+// employeeController/attandanceCheckout.js  (fixed)
 const AttendanceModel = require("../models/attendance");
 const EmployeeModel = require("../models/employee");
 const RockstarShiftModel = require("../models/rockStarShift");
+const PaymentModel = require("../models/Payment");
+
+//checkIn multiple time
 
 // 🕒 Convert time to IST
-// 🕒 Convert time to IST (correct method)
 function getIndianDate() {
   const now = new Date();
-  console.log("Current UTC Time:", now);
   const istOffset = 5.5 * 60 * 60 * 1000; // IST = UTC + 5:30
-  console.log("IST Offset (ms):", istOffset);
-  console.log("IST Time:", new Date(now.getTime() + istOffset));
   return new Date(now.getTime() + istOffset);
 }
 
@@ -18,53 +18,90 @@ function getIndianDateKey() {
   const ist = getIndianDate();
   return ist.toISOString().slice(0, 10);
 }
+function getTomorrowDateKey() {
+  const now = new Date();
 
-console.log("Date Key (IST):", new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }));
+  // convert to IST (UTC +5:30)
+  const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
 
-// ✅ Check if current time is within shift (+/- 15min)
-function isWithinShiftTime(current, start, end, graceMinutes = 15) {
-  const graceMs = graceMinutes * 60 * 1000;
-  const startWithGrace = new Date(start.getTime() - graceMs);
-  const endWithGrace = new Date(end.getTime() + graceMs);
-  console.log("Current Time:", current);
-  console.log("Shift Start with Grace:", startWithGrace);
-  console.log("Shift End with Grace:", endWithGrace);
-  return current >= startWithGrace && current <= endWithGrace;
-  
+  // add 1 day
+  istTime.setDate(istTime.getDate() - 1);
 
+  // return YYYY-MM-DD
+  return istTime.toISOString().slice(0, 10);
 }
 
-// ✅ Employee Check-In
+
+function getIndianMonthKey() {
+  const ist = getIndianDate();
+  const year = ist.getFullYear();
+  const month = String(ist.getMonth() + 1).padStart(2, "0"); // 01–12
+  return `${year}-${month}`;
+}
+function toIST(date) {
+  // Convert UTC → IST (+5:30)
+  return new Date(date.getTime() - 5.5 * 60 * 60 * 1000);
+}
+
+
+// ✅ Check if current time is within shift (+/- 15min)
+function isWithinShiftTime(currentUTC, startIST, endIST, graceMinutes = 15) {
+  // Convert current time from UTC → IST
+  const currentIST = toIST(currentUTC);
+
+  const graceMs = graceMinutes * 60 * 1000;
+
+  // Apply grace
+  const startWithGrace = new Date(startIST.getTime() - graceMs);
+  const endWithGrace = new Date(endIST.getTime() + graceMs);
+
+  // Full debug logs
+  console.log("--------------- SHIFT VALIDATION ----------------");
+  console.log("Shift Start (IST):", startIST);
+  console.log("Shift End   (IST):", endIST);
+  console.log("Allowed Start - Grace:", startWithGrace);
+  console.log("Allowed End   + Grace:", endWithGrace);
+  console.log("Current Time (IST):", currentIST);
+  console.log("---------------------------------------------------");
+
+  return currentIST >= startWithGrace && currentIST <= endWithGrace;
+}
+
+
+
+/**
+ * Build a Date for the shift time in IST for the given dateKey.
+ * Example: dateKey = "2025-11-27", timeStr = "06:00" -> new Date("2025-11-27T06:00:00+05:30")
+ */
+function buildIstDateFromDateKeyAndTime(dateKey, timeStr) {
+  // Ensure timeStr is "HH:MM"
+  const [hh, mm] = (timeStr || "00:00").split(":").map(s => String(s).padStart(2, "0"));
+  // Construct with explicit +05:30 so JS parses correctly as IST moment
+  const isoWithOffset = `${dateKey}T${hh}:${mm}:00+05:30`;
+  return new Date(isoWithOffset);
+}
+
+// ------------------ CHECK-IN ------------------
 const checkIn = async (req, res) => {
   try {
     const { employeeId } = req.body;
+    if (!employeeId) return res.status(400).json({ message: "employeeId required", success: false });
+
     const nowIST = getIndianDate();
     const dateKey = getIndianDateKey();
+    const month = getIndianMonthKey();
+
+    const nextDay= getTomorrowDateKey();
 
     const employee = await EmployeeModel.findById(employeeId);
-    if (!employee)
-      return res.status(404).json({ message: "Employee not found", success: false });
+    if (!employee) return res.status(404).json({ message: "Employee not found", success: false });
 
-    console.log("Employee Details:", employee);
-    console.log("Current IST Time:", nowIST);
-    console.log("Date Key (IST):", dateKey);
-    // 🔍 Find today's active shift
+    // Find today's active/upcoming shift for this employee
     const shift = await RockstarShiftModel.findOne({
       employees: employeeId,
-      dateKey: dateKey,
+      dateKey,
       status: { $in: ["active", "upcoming"] },
     });
-    console.log("Date Key (IST):", new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }));
-
-    console.log("🗓️ Date Key:", dateKey);
-    console.log("🔍 Shift search for:", { employeeId, dateKey });
-    console.log("🎯 Found shift:", shift ? shift.shiftName : "None");
-    console.log("⏰ Current IST time:", shift);
-
-    console.log("Current IST Time:", nowIST);
-    console.log("Shift Details:", shift);
-    console.log("Shift Start Time:", shift ? shift.startTime : "N/A");
-    console.log("Shift End Time:", shift ? shift.endTime : "N/A");
 
     if (!shift) {
       return res.status(404).json({
@@ -72,42 +109,68 @@ const checkIn = async (req, res) => {
         success: false,
       });
     }
+    let payment = await PaymentModel.findOne({
+      employee: employeeId,
+      salaryMonth: month,
+    });
+    if (!payment) {
+      payment = new PaymentModel({
+        employee: employeeId,
+        salaryMonth: month,
+        amountPaid: 0,
+        previousDue: 0,
+        remainingDue: 0,
+        overtimeMinites: 0,
+        overLateTime: 0,
+        basicSalary: 0,
+        leaveDays:0,
+        leaveDeductions:0,
+        absentDeductions:0,
+        totalWorkingDays:30,
+        overtimePay:0,
+        lateTimeDeductions:0,
+      });
+    }
 
-    // Parse shift start & end times
-    const [startH, startM] = shift.startTime.split(":").map(Number);
-    const [endH, endM] = shift.endTime.split(":").map(Number);
-    const shiftStart = getIndianDate();
-        console.log("Parsed Shift Start Time 1:", shiftStart);
+    // Parse shift start/end as IST moments on the shift.dateKey
+    const parsedShiftStart = buildIstDateFromDateKeyAndTime(dateKey, shift.startTime);
+    const parsedShiftEnd = buildIstDateFromDateKeyAndTime(dateKey, shift.endTime);
+    console.log("parsedShiftStart",parsedShiftStart)
+    console.log("parsedShiftEnd",parsedShiftEnd)
+    console.log("nowIST",nowIST)
 
-    
-        console.log("Parsed Shift Start Time: 2", shiftStart);
 
-    const shiftEnd = getIndianDate();
-   
-
-    console.log("Parsed Shift Start Time:", shiftStart);
-    console.log("Parsed Shift End Time:", shiftEnd);
-
-    // Validate time window
-    if (!isWithinShiftTime(nowIST, shiftStart, shiftEnd)) {
+    // Validate check-in is within shift window (+/- 15 minutes)
+    if (!isWithinShiftTime(nowIST, parsedShiftStart, parsedShiftEnd)) {
       return res.status(400).json({
         message: `⏰ Check-in not allowed. Your ${shift.shiftName} is ${shift.startTime}–${shift.endTime} (+15 min grace).`,
         success: false,
       });
-    }    console.log("Proceeding to create new attendance record.",nowIST);
+    }
 
+    const existPrevious=await AttendanceModel.findOne({employee:employeeId,dateKey:nextDay})
 
 
     // Check if already checked in today
     const existing = await AttendanceModel.findOne({ employee: employeeId, dateKey });
-    
-    if (existing) {
+    if (!existing){
+      payment.presentDays=payment.presentDays+1;
+      console.log(">?>?>?",payment.presentDays)
+
+      if (!existPrevious) {
+        payment.absentDays=payment.absentDays+1;
+      }
+
+      await payment.save();
+
+    } else{
       return res.status(400).json({
         message: "⚠️ You have already checked in today.",
         success: false,
       });
     }
 
+    // Create attendance
     const newAttendance = new AttendanceModel({
       employee: employeeId,
       date: nowIST,
@@ -115,11 +178,60 @@ const checkIn = async (req, res) => {
       checkIn: nowIST,
       status: "present",
       shift: shift._id,
+      overTime: 0,
+      overtimePay:"100/h",
+
+      // initialize numeric fields to avoid unexpected NaN later
+      earlyBy: "0",
+      lateBy: "0",
     });
 
-    await newAttendance.save();
+    // Early: check if employee checked in BEFORE shift start
+    if (nowIST < parsedShiftStart) {
+      newAttendance.early = true;
+      const diffMs = parsedShiftStart - nowIST;
+      const earlyMinutes = Math.floor(diffMs / 60000);
+      newAttendance.earlyBy = String(earlyMinutes);
+    } else {
+      newAttendance.early = false;
+      newAttendance.earlyBy = "0";
+    }
 
-    // ✅ Mark shift as active if it was upcoming
+    // Late: check if employee checked in AFTER shift start
+    if (nowIST > parsedShiftStart) {
+      newAttendance.late = true;
+      const diffMs = nowIST - parsedShiftStart;
+      const lateMinutes = Math.floor(diffMs / 60000);
+      newAttendance.lateBy = String(lateMinutes);
+    } else {
+      newAttendance.late = false;
+      newAttendance.lateBy = "0";
+    }
+
+    await newAttendance.save();
+     const basicSalary = Number(employee.salary) || 0;
+  const totalDays = Number(payment.totalWorkingDays) || 1; // Prevent 0 division
+  const present = Number(payment.presentDays) || 0;
+  const absent = Number(payment.absentDays) || 0;
+  const leaves = Number(payment.leaveDays) || 0;
+
+
+    const dailySalary = basicSalary / totalDays;
+
+  // Deductions
+  payment.absentDeductions = dailySalary * absent;
+  payment.leaveDeductions = dailySalary * leaves;
+
+  // Base salary
+  payment.basicSalary = basicSalary;
+    
+
+    // Update basic salary (keeps numeric fields safe)
+    payment.basicSalary = Number(employee.salary || 0);
+
+    await payment.save();
+
+    // If shift was upcoming, mark active
     if (shift.status === "upcoming") {
       shift.status = "active";
       await shift.save();
@@ -132,30 +244,117 @@ const checkIn = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Check-in Error:", err);
-    res.status(500).json({ message: "Internal Server Error", success: false });
+    res.status(500).json({ message: "Internal Server Error", success: false, error: err.message });
   }
 };
 
-// ✅ Employee Check-Out
+// ------------------ CHECK-OUT ------------------
 const checkOut = async (req, res) => {
   try {
     const { employeeId } = req.body;
+    if (!employeeId) return res.status(400).json({ message: "employeeId required", success: false });
+
     const nowIST = getIndianDate();
     const dateKey = getIndianDateKey();
+    const month = getIndianMonthKey();
 
+    // Find today's attendance and populate shift reference
     const attendance = await AttendanceModel.findOne({ employee: employeeId, dateKey }).populate("shift");
-    if (!attendance)
-      return res.status(404).json({ message: "No check-in found for today", success: false });
+    if (!attendance) return res.status(404).json({ message: "No check-in found for today", success: false });
 
+    // Determine shift end time (from shift in attendance or by finding active shift)
+    const shift = attendance.shift || (await RockstarShiftModel.findOne({
+      employees: employeeId,
+      dateKey,
+      status: { $in: ["active", "upcoming", "completed"] },
+    }));
+
+    if (!shift) {
+      return res.status(500).json({ message: "Shift info not found for checkout", success: false });
+    }
+
+    // Build parsed shift end as IST moment
+    const parsedShiftEnd = buildIstDateFromDateKeyAndTime(dateKey, shift.endTime);
+
+    // Ensure numeric lateBy / overTime fields exist and are numbers
+    attendance.lateBy = Number(attendance.lateBy || 0);
+    attendance.overTime = Number(attendance.overTime || 0);
+
+    if (nowIST < parsedShiftEnd) {
+      const diffMs = parsedShiftEnd - nowIST;
+      const minutesUntilEnd = Math.floor(diffMs / 60000);
+      attendance.lateBy = Number(attendance.lateBy || 0) + minutesUntilEnd;
+    } else if (nowIST > parsedShiftEnd) {
+      const diffMs = nowIST - parsedShiftEnd;
+      const lateMinutes = Math.floor(diffMs / 60000);
+      const prevLate = Number(attendance.lateBy || 0);
+
+      if (prevLate < lateMinutes) {
+        attendance.overTime = lateMinutes - prevLate;
+        attendance.lateBy = 0;
+      } else {
+        attendance.lateBy = prevLate - lateMinutes;
+        attendance.overTime = 0;
+      }
+    }
 
     attendance.checkOut = nowIST;
     await attendance.save();
 
-    // ✅ Mark shift as completed if checked out
-    const shift = attendance.shift;
-    if (shift) {
-      shift.status = "active";
-      await shift.save();
+    // Update monthly payment record with overtime etc.
+    let payment = await PaymentModel.findOne({
+      employee: employeeId,
+      salaryMonth: month,
+    });
+
+    if (!payment) {
+      payment = new PaymentModel({
+        employee: employeeId,
+        salaryMonth: month,
+        amountPaid: 0,
+        previousDue: 0,
+        remainingDue: 0,
+        overtimeMinites: 0,
+        overLateTime: 0,
+        basicSalary: Number(employee.salary || 0),
+      });
+    }
+
+    // Initialize numeric fields safely
+    payment.overtimeMinites = Number(payment.overtimeMinites || 0) + Number(attendance.overTime || 0);
+        console.log("overtimeMinites",payment.overtimeMinites)
+
+    payment.overLateTime = Number(payment.overLateTime || 0) + Number(attendance.lateBy || 0);
+        console.log("overLateTime",payment.overLateTime)
+
+        const overLate=Number(payment.overLateTime);
+        const overtime=Number(payment.overtimeMinites );
+
+
+    payment.lateTimeDeductions= (overLate/60)*100;
+    console.log("late",payment.lateTimeDeductions)
+    payment.overtimePay= (overtime / 60)*100;
+    console.log("overtimePay",payment.overtimePay)
+
+    payment.totalDeductions=payment.totalDeductions+payment.lateTimeDeductions
+
+    console.log("totalDeductions",payment.totalDeductions)
+
+
+    payment.netSalary=payment.grossSalary-payment.totalDeductions;
+    console.log("netSalary",payment.netSalary)
+
+
+
+
+
+
+    await payment.save();
+
+    // Mark shift as completed/active if needed
+    if (attendance.shift) {
+      attendance.shift.status = "active";
+      await attendance.shift.save().catch(() => {});
     }
 
     res.status(200).json({
@@ -165,8 +364,9 @@ const checkOut = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Check-out Error:", err);
-    res.status(500).json({ message: "Internal Server Error", success: false });
+    res.status(500).json({ message: "Internal Server Error", success: false, error: err.message });
   }
 };
 
 module.exports = { checkIn, checkOut };
+

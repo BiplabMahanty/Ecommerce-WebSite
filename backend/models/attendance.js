@@ -7,8 +7,14 @@ const attendanceSchema = new mongoose.Schema(
     dateKey: { type: String, required: true },
     checkIn: { type: Date },
     checkOut: { type: Date },
+    late:{type:Boolean},
+    early:{type:Boolean},
+    leave:{type:Boolean},
     status: { type: String, enum: ["present", "absent", "half-day"], default: "present" },
     totalHours: { type: String, default: "0h 0m 0s" },
+    lateBy:{type:Number,default:0},
+    earlyBy:{type:Number,default:0},
+    overTime:{type:Number,default:0},
     shift:{type: mongoose.Schema.Types.ObjectId, ref: "RockstarShift", required: true },
      // 🧭 YYYY-MM-DD (IST)
 
