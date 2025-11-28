@@ -68,3 +68,12 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+Component	Source
+Total Working Days	Attendance model
+Late/Absent Days	Attendance model
+Leave Deductions	Leave model
+Overtime Hours	Check-out time beyond shift
+Overtime Payment	e.g. ₹100/hour
+Salary Deductions	Based on absent days

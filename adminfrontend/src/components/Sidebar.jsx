@@ -7,6 +7,7 @@ import MonthlyCalendar from "./calendar";
 import Add from "./addShift";
 import EmployeeAddToRockstarPage from "./addEmp";
 import PayrollDashboard from "./PayrollStatus";
+import PaymentPage from "./PaymentSection"
 export default function Sidebar() {
   const [activePage, setActivePage] = useState("dashboard");
 
@@ -87,6 +88,15 @@ export default function Sidebar() {
             >
               <Calendar size={18} /> PayrollDetails
             </button>
+
+                 
+
+             <button
+              className={`w-full flex items-center gap-3 p-3 rounded-lg ${activePage === "PaymentPage" ? "bg-yellow-500 text-black" : "hover:bg-white/10"}`}
+              onClick={() => setActivePage("PaymentPage")}
+            >
+              <Calendar size={18} /> PaymentPage
+            </button>
           </nav>
         </div>
 
@@ -108,6 +118,7 @@ export default function Sidebar() {
         {activePage === "Add" && <Add/>}
         {activePage === "EmployeeAddToRockstarPage" && <EmployeeAddToRockstarPage/>}
         {activePage === "PayrollDashboard" && <PayrollDashboard />}
+        {activePage === "PaymentPage" && <PaymentPage />}
 
         
       
