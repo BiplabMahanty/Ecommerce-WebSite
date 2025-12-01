@@ -32,6 +32,9 @@ const addShift = async (req, res) => {
 
     await newShift.save();
 
+    
+
+
     res.status(201).json({
       success: true,
       message: "Rockstar shift created successfully!",

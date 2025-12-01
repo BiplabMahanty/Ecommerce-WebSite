@@ -8,7 +8,7 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Salary month: YYYY-MM (EX: 2025-01)
+    // Salary month: YYYY-MM
     salaryMonth: {
       type: String,
       required: true,
@@ -28,14 +28,14 @@ const paymentSchema = new mongoose.Schema(
     leaveDeductions: { type: Number, default: 0 },
     absentDeductions: { type: Number, default: 0 },
     overtimeMinites: { type: Number, default: 0 },
-    overLateTime:{type:Number,default:0},
+    overLateTime: { type: Number, default: 0 },
     overtimePay: { type: Number, default: 0 },
-    lateTimeDeductions:{type:Number,default:0},
+    lateTimeDeductions: { type: Number, default: 0 },
 
     // Final calculation
-    grossSalary: { type: Number, default: 0 }, // basic + allowances + overtime
-    totalDeductions: { type: Number, default: 0 }, // leave + absent
-    netSalary: { type: Number, default: 0 }, // gross - deductions
+    grossSalary: { type: Number, default: 0 },
+    totalDeductions: { type: Number, default: 0 },
+    netSalary: { type: Number, default: 0 },
 
     // Payment Status
     paymentStatus: {
@@ -44,36 +44,53 @@ const paymentSchema = new mongoose.Schema(
       default: "pending",
     },
 
-    // Payment info
     paymentMethod: {
       type: String,
       enum: ["Cash", "UPI", "Bank Transfer", "Cheque"],
       default: "Cash",
     },
 
-    transactionId: { type: String }, // UPI/Bank reference
+    transactionId: { type: String },
     paidAt: { type: Date },
 
-    // Salary Slip URL (PDF download)
     salarySlipUrl: { type: String },
 
-    // Audit logs / meta
     remarks: { type: String, trim: true },
   },
   { timestamps: true }
 );
 
-// --------------------------------------
-// AUTO CALCULATE: grossSalary, deductions, netSalary
-// --------------------------------------
+// -------------------------------
+// Round helper
+// -------------------------------
+const roundNumber = (num) => Math.round(Number(num) || 0);
+
+// -------------------------------
+// PRE-SAVE MIDDLEWARE
+// -------------------------------
 paymentSchema.pre("save", function (next) {
+  // Round all numeric values before saving
+  this.basicSalary = roundNumber(this.basicSalary);
+  this.allowances = roundNumber(this.allowances);
+
+  this.totalWorkingDays = roundNumber(this.totalWorkingDays);
+  this.presentDays = roundNumber(this.presentDays);
+  this.absentDays = roundNumber(this.absentDays);
+  this.leaveDays = roundNumber(this.leaveDays);
+
+  this.leaveDeductions = roundNumber(this.leaveDeductions);
+  this.absentDeductions = roundNumber(this.absentDeductions);
+  this.overtimeMinites = roundNumber(this.overtimeMinites);
+  this.overLateTime = roundNumber(this.overLateTime);
+  this.overtimePay = roundNumber(this.overtimePay);
+  this.lateTimeDeductions = roundNumber(this.lateTimeDeductions);
+
+  // Calculate totals
   this.grossSalary =
-    (this.basicSalary || 0) +
-    (this.allowances || 0) +
-    (this.overtimePay || 0);
+    this.basicSalary + this.allowances + this.overtimePay;
 
   this.totalDeductions =
-    (this.leaveDeductions || 0) + (this.absentDeductions || 0)+(this.lateTimeDeductions);
+    this.leaveDeductions + this.absentDeductions + this.lateTimeDeductions;
 
   this.netSalary = this.grossSalary - this.totalDeductions;
 
@@ -81,4 +98,4 @@ paymentSchema.pre("save", function (next) {
 });
 
 const PaymentModel = mongoose.model("PayrollPayment", paymentSchema);
-module.exports=PaymentModel;
+module.exports = PaymentModel;

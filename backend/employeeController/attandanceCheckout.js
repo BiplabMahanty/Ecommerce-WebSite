@@ -73,6 +73,7 @@ function isWithinShiftTime(currentUTC, startIST, endIST, graceMinutes = 15) {
  * Build a Date for the shift time in IST for the given dateKey.
  * Example: dateKey = "2025-11-27", timeStr = "06:00" -> new Date("2025-11-27T06:00:00+05:30")
  */
+
 function buildIstDateFromDateKeyAndTime(dateKey, timeStr) {
   // Ensure timeStr is "HH:MM"
   const [hh, mm] = (timeStr || "00:00").split(":").map(s => String(s).padStart(2, "0"));
@@ -129,7 +130,7 @@ const checkIn = async (req, res) => {
         totalWorkingDays:30,
         overtimePay:0,
         lateTimeDeductions:0,
-      });
+      }); 
     }
 
     // Parse shift start/end as IST moments on the shift.dateKey
@@ -149,6 +150,7 @@ const checkIn = async (req, res) => {
     }
 
     const existPrevious=await AttendanceModel.findOne({employee:employeeId,dateKey:nextDay})
+    const existRockstar=await RockstarShiftModel.findOne({employee:employeeId,dateKey:nextDay})
 
 
     // Check if already checked in today
@@ -157,9 +159,18 @@ const checkIn = async (req, res) => {
       payment.presentDays=payment.presentDays+1;
       console.log(">?>?>?",payment.presentDays)
 
-      if (!existPrevious) {
-        payment.absentDays=payment.absentDays+1;
+      if (existRockstar) {
+
+        if (!existPrevious) {
+             payment.absentDays=payment.absentDays+1;
+        }
+        
+      }else{
+        payment.leaveDays=payment.leaveDays+1;
+        payment.totalWorkingDays=payment.totalWorkingDays-1;
       }
+
+     
 
       await payment.save();
 
@@ -180,9 +191,7 @@ const checkIn = async (req, res) => {
       shift: shift._id,
       overTime: 0,
       overtimePay:"100/h",
-
-      // initialize numeric fields to avoid unexpected NaN later
-      earlyBy: "0",
+       earlyBy: "0",
       lateBy: "0",
     });
 
@@ -210,10 +219,10 @@ const checkIn = async (req, res) => {
 
     await newAttendance.save();
      const basicSalary = Number(employee.salary) || 0;
-  const totalDays = Number(payment.totalWorkingDays) || 1; // Prevent 0 division
-  const present = Number(payment.presentDays) || 0;
-  const absent = Number(payment.absentDays) || 0;
-  const leaves = Number(payment.leaveDays) || 0;
+     const totalDays = Number(payment.totalWorkingDays) || 1; // Prevent 0 division
+     const present = Number(payment.presentDays) || 0;
+     const absent = Number(payment.absentDays) || 0;
+     const leaves = Number(payment.leaveDays) || 0;
 
 
     const dailySalary = basicSalary / totalDays;
@@ -221,6 +230,9 @@ const checkIn = async (req, res) => {
   // Deductions
   payment.absentDeductions = dailySalary * absent;
   payment.leaveDeductions = dailySalary * leaves;
+
+  console.log("absentDeductions",payment.absentDeductions)
+  console.log("leaveDeductions",payment.leaveDeductions)
 
   // Base salary
   payment.basicSalary = basicSalary;
@@ -336,12 +348,10 @@ const checkOut = async (req, res) => {
     payment.overtimePay= (overtime / 60)*100;
     console.log("overtimePay",payment.overtimePay)
 
-    payment.totalDeductions=payment.totalDeductions+payment.lateTimeDeductions
 
     console.log("totalDeductions",payment.totalDeductions)
 
 
-    payment.netSalary=payment.grossSalary-payment.totalDeductions;
     console.log("netSalary",payment.netSalary)
 
 
@@ -350,6 +360,8 @@ const checkOut = async (req, res) => {
 
 
     await payment.save();
+    console.log("totalDeductions",payment.totalDeductions)
+
 
     // Mark shift as completed/active if needed
     if (attendance.shift) {

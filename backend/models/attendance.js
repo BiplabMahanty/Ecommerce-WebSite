@@ -10,7 +10,7 @@ const attendanceSchema = new mongoose.Schema(
     late:{type:Boolean},
     early:{type:Boolean},
     leave:{type:Boolean},
-    status: { type: String, enum: ["present", "absent", "half-day"], default: "present" },
+    status: { type: String, enum: ["present", "absent", "half-day","notStart"], default: "present" },
     totalHours: { type: String, default: "0h 0m 0s" },
     lateBy:{type:Number,default:0},
     earlyBy:{type:Number,default:0},
