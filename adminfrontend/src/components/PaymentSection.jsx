@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { successToast, errorToast } from "../utils/toastMessage";
 
 const EmployeePayment = () => {
   const [employees, setEmployees] = useState([]);
@@ -7,20 +8,19 @@ const EmployeePayment = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [employeeDetails, setEmployeeDetails] = useState(null);
-  const [paymentDetails, setPaymentDetails] = useState(null); // Fixed: should be null, not []
+  const [paymentDetails, setPaymentDetails] = useState(null);
+  const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  console.log("paymentDetails", paymentDetails);
-  console.log("selectedMonth", selectedMonth);
-  console.log("selectedEmployee", selectedEmployee);
-  console.log("payments", payments);
-  
+  console.log("invoice",invoice)
+
   const [paymentForm, setPaymentForm] = useState({
     method: 'Cash',
     note: '',
   });
 
   const API_BASE = 'http://localhost:9000/api/admin';
+  const EMPLOYEE_API = 'http://localhost:9000/api/employee';
 
   // Fetch all employees on mount
   useEffect(() => {
@@ -37,7 +37,43 @@ const EmployeePayment = () => {
       }
     } catch (error) {
       console.error('Error fetching employees:', error);
-      alert('Failed to load employees');
+      errorToast('Failed to load employees');
+    }
+  };
+
+  // ✅ FIXED: Fetch invoice with explicit parameters to avoid stale state
+  const fetchInvoice = async (employeeId, month) => {
+    // Guard clause - only fetch if we have both employee and month
+    if (!employeeId || !month) {
+      console.log('Cannot fetch invoice: missing employee or month', { employeeId, month });
+      return;
+    }
+
+    try {
+      console.log('Fetching invoice for:', { 
+        employeeId: employeeId, 
+        salaryMonth: month 
+      });
+
+      const res = await axios.post(`${EMPLOYEE_API}/invoice`, {
+        employeeId: employeeId,
+        salaryMonth: month
+      });
+
+      if (res.data && res.data.success) {
+        setInvoice(res.data.invoice || null); // ✅ FIXED: lowercase 'invoice'
+        console.log('Invoice fetched successfully:', res.data.invoice);
+      } else {
+        setInvoice(null);
+        console.warn('Invoice not found:', res.data?.message);
+      }
+    } catch (err) {
+      console.error('Error fetching invoice:', err);
+      setInvoice(null);
+      // Only show alert if it's not a 404 (invoice might not exist yet)
+      if (err.response?.status !== 404) {
+        // Silently handle 404s as invoice may not be generated yet
+      }
     }
   };
 
@@ -58,8 +94,9 @@ const EmployeePayment = () => {
     setSelectedEmployee(employeeId);
     setEmployeeDetails(null);
     setPaymentDetails(null);
-    setSelectedMonth(''); // Reset month when changing employee
-    
+    setSelectedMonth('');
+    setInvoice(null); // ✅ Reset invoice when changing employee
+
     if (!employeeId) return;
 
     // Find employee details
@@ -73,37 +110,37 @@ const EmployeePayment = () => {
   const handleMonthChange = async (month) => {
     setSelectedMonth(month);
     setPaymentDetails(null);
+    setInvoice(null); // ✅ Reset invoice when changing month
 
     if (!selectedEmployee || !month) return;
 
     setLoading(true);
     try {
-      // Convert "2025-01" to "2025/01" format for backend
       const formattedMonth = month;
-      console.log("month",formattedMonth)
-      
-      // Correct API call: GET request with params and query
+
+      // Fetch payment details
       const response = await axios.get(
         `${API_BASE}/getPayment/${selectedEmployee}?month=${formattedMonth}`
       );
 
-      console.log("API Response:", response.data);
+      console.log('API Response:', response.data);
 
       if (response.data.success && response.data.payment) {
-        // Check if payment is an empty array (backend returns [] when no record found)
         if (Array.isArray(response.data.payment) && response.data.payment.length === 0) {
-          alert('No payment record found for this month');
+          errorToast('No payment record found for this month');
           setPaymentDetails(null);
         } else {
           setPaymentDetails(response.data.payment);
+          // ✅ Fetch invoice after payment details are loaded, passing explicit params
+          await fetchInvoice(selectedEmployee, month);
         }
       } else {
-        alert('No payment record found for this month');
+        errorToast('No payment record found for this month');
         setPaymentDetails(null);
       }
     } catch (error) {
       console.error('Error fetching payment details:', error);
-      alert('Failed to fetch payment details: ' + (error.response?.data?.message || error.message));
+      errorToast('Failed to fetch payment details: ' + (error.response?.data?.message || error.message));
       setPaymentDetails(null);
     } finally {
       setLoading(false);
@@ -118,17 +155,195 @@ const EmployeePayment = () => {
     });
   };
 
+  // ✅ Handle print invoice
+  const handlePrintInvoice = () => {
+    if (!invoice) {
+      errorToast('Invoice not available. Please wait for invoice to be generated.');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Invoice - ${employeeDetails?.name} - ${selectedMonth}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              padding: 40px; 
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .invoice-header { 
+              text-align: center; 
+              margin-bottom: 30px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 20px;
+            }
+            .invoice-header h1 {
+              margin: 0;
+              color: #333;
+            }
+            .invoice-info {
+              display: flex;
+              justify-content: space-between;
+              margin: 30px 0;
+            }
+            .info-section {
+              flex: 1;
+            }
+            .info-section h3 {
+              margin-bottom: 10px;
+              color: #555;
+            }
+            .info-section p { 
+              margin: 5px 0; 
+              line-height: 1.6;
+            }
+            table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin: 30px 0; 
+            }
+            th, td { 
+              border: 1px solid #ddd; 
+              padding: 12px; 
+              text-align: left; 
+            }
+            th { 
+              background-color: #f2f2f2;
+              font-weight: bold;
+            }
+            .amount {
+              text-align: right;
+            }
+            .total-row {
+              font-weight: bold; 
+              background-color: #f9f9f9;
+              font-size: 1.1em;
+            }
+            .net-salary-row {
+              background-color: #e8f5e9;
+              font-size: 1.2em;
+              font-weight: bold;
+            }
+            .footer {
+              margin-top: 50px;
+              text-align: center;
+              color: #666;
+              font-size: 0.9em;
+            }
+            @media print {
+              button { display: none; }
+            }
+            .print-btn {
+              background-color: #4CAF50;
+              color: white;
+              padding: 10px 30px;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+              font-size: 16px;
+              margin: 20px auto;
+              display: block;
+            }
+            .print-btn:hover {
+              background-color: #45a049;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-header">
+            <h1>SALARY INVOICE</h1>
+            <p><strong>Invoice No:</strong> ${invoice.invoiceNo || 'N/A'}</p>
+            <p><strong>Invoice Date:</strong> ${new Date(invoice.invoiceDate).toLocaleDateString()}</p>
+          </div>
+          
+          <div class="invoice-info">
+            <div class="info-section">
+              <h3>Employee Details:</h3>
+              <p><strong>Name:</strong> ${invoice.employeeName || employeeDetails?.name}</p>
+              <p><strong>Employee ID:</strong> ${selectedEmployee}</p>
+              <p><strong>Department:</strong> ${invoice.department || employeeDetails?.department}</p>
+              <p><strong>Designation:</strong> ${invoice.designation || 'N/A'}</p>
+            </div>
+            <div class="info-section">
+              <h3>Payment Details:</h3>
+              <p><strong>Salary Month:</strong> ${selectedMonth}</p>
+              <p><strong>Payment Status:</strong> ${invoice.paymentStatus}</p>
+              <p><strong>Payment Method:</strong> ${invoice.paymentMethod}</p>
+              ${invoice.transactionId ? `<p><strong>Transaction ID:</strong> ${invoice.transactionId}</p>` : ''}
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="amount">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>EARNINGS</strong></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Basic Salary</td>
+                <td class="amount">₹${invoice.basicSalary || 0}</td>
+              </tr>
+              ${invoice.hraAllowances ? `<tr><td>HRA Allowance</td><td class="amount">₹${invoice.hraAllowances}</td></tr>` : ''}
+              ${invoice.daAllowances ? `<tr><td>DA Allowance</td><td class="amount">₹${invoice.daAllowances}</td></tr>` : ''}
+              ${invoice.taAllowances ? `<tr><td>TA Allowance</td><td class="amount">₹${invoice.taAllowances}</td></tr>` : ''}
+              ${invoice.maAllowances ? `<tr><td>MA Allowance</td><td class="amount">₹${invoice.maAllowances}</td></tr>` : ''}
+              ${invoice.spAllowances ? `<tr><td>Special Allowance</td><td class="amount">₹${invoice.spAllowances}</td></tr>` : ''}
+              ${invoice.overtimePay ? `<tr><td>Overtime Pay (${invoice.overtimeMinites} mins)</td><td class="amount">₹${invoice.overtimePay}</td></tr>` : ''}
+              <tr class="total-row">
+                <td>Gross Salary</td>
+                <td class="amount">₹${invoice.grossSalary || 0}</td>
+              </tr>
+              <tr>
+                <td><strong>DEDUCTIONS</strong></td>
+                <td></td>
+              </tr>
+              ${invoice.pf ? `<tr><td>PF</td><td class="amount">-₹${invoice.pf}</td></tr>` : ''}
+              ${invoice.esic ? `<tr><td>ESIC</td><td class="amount">-₹${invoice.esic}</td></tr>` : ''}
+              ${invoice.professionalTex ? `<tr><td>Professional Tax</td><td class="amount">-₹${invoice.professionalTex}</td></tr>` : ''}
+              ${invoice.absentDeductions ? `<tr><td>Absent Deductions</td><td class="amount">-₹${invoice.absentDeductions}</td></tr>` : ''}
+              ${invoice.leaveDeductions ? `<tr><td>Leave Deductions</td><td class="amount">-₹${invoice.leaveDeductions}</td></tr>` : ''}
+              ${invoice.lateTimeDeductions ? `<tr><td>Late Time Deductions (${invoice.overLateTime} mins)</td><td class="amount">-₹${invoice.lateTimeDeductions}</td></tr>` : ''}
+             
+              <tr class="net-salary-row">
+                <td><strong>NET SALARY</strong></td>
+                <td class="amount"><strong>₹${invoice.netSalary || 0}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>This is a computer-generated invoice and does not require a signature.</p>
+            <p>Generated on: ${new Date().toLocaleString()}</p>
+          </div>
+
+          <button class="print-btn" onclick="window.print()">🖨️ Print Invoice</button>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // Handle payment submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!selectedEmployee || !selectedMonth || !paymentDetails) {
-      alert('Please select employee and month first');
+      errorToast('Please select employee and month first');
       return;
     }
 
-    if (paymentDetails.paymentStatus === 'paid') {
-      alert('This salary has already been paid!');
+    if (paymentDetails.paymentStatus === 'PAID') {
+      errorToast('This salary has already been PAID!');
       return;
     }
 
@@ -141,7 +356,7 @@ const EmployeePayment = () => {
     setLoading(true);
     try {
       const formattedMonth = selectedMonth;
-      
+
       const response = await axios.post(`${API_BASE}/paySalary`, {
         employeeId: selectedEmployee,
         amount: paymentDetails.netSalary,
@@ -151,14 +366,16 @@ const EmployeePayment = () => {
       });
 
       if (response.data.success) {
-        alert('✅ Payment successful!');
+        errorToast('✅ Payment successful!');
         setPaymentDetails(response.data.payment);
         setPaymentForm({ method: 'Cash', note: '' });
-        fetchAllPayments(); // Refresh payment history
+        fetchAllPayments();
+        // ✅ Fetch invoice after successful payment, passing explicit params
+        await fetchInvoice(selectedEmployee, selectedMonth);
       }
     } catch (error) {
       console.error('Payment error:', error);
-      alert('Failed to process payment: ' + (error.response?.data?.message || error.message));
+      errorToast('Failed to process payment: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -234,48 +451,48 @@ const EmployeePayment = () => {
         {paymentDetails && !loading && (
           <div className="bg-gray-50 p-6 border rounded-xl mb-6">
             <h3 className="font-semibold text-lg mb-4 text-gray-800">Salary Breakdown - {selectedMonth}</h3>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div className="bg-white p-3 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Basic Salary</p>
                 <p className="font-bold text-lg text-gray-800">₹{paymentDetails.basicSalary || 0}</p>
               </div>
-              
+
               <div className="bg-white p-3 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Working Days</p>
                 <p className="font-bold text-lg text-gray-800">{paymentDetails.totalWorkingDays || 0}</p>
               </div>
-              
+
               <div className="bg-white p-3 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Present Days</p>
                 <p className="font-bold text-lg text-green-600">{paymentDetails.presentDays || 0}</p>
               </div>
-              
+
               <div className="bg-white p-3 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Absent Days</p>
                 <p className="font-bold text-lg text-red-600">{paymentDetails.absentDays || 0}</p>
               </div>
-              
+
               <div className="bg-white p-3 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Overtime (mins)</p>
                 <p className="font-bold text-lg text-blue-600">{paymentDetails.overtimeMinites || 0}</p>
               </div>
-              
+
               <div className="bg-white p-3 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Late Time (mins)</p>
                 <p className="font-bold text-lg text-orange-600">{paymentDetails.overLateTime || 0}</p>
               </div>
-              
+
               <div className="bg-white p-3 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Gross Salary</p>
                 <p className="font-bold text-lg text-gray-800">₹{paymentDetails.grossSalary || 0}</p>
               </div>
-              
+
               <div className="bg-white p-3 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Total Deductions</p>
                 <p className="font-bold text-lg text-red-600">-₹{paymentDetails.totalDeductions || 0}</p>
               </div>
-              
+
               <div className="bg-green-100 p-3 rounded-lg shadow-sm border-2 border-green-500">
                 <p className="text-green-700 text-xs font-semibold">NET SALARY</p>
                 <p className="font-bold text-2xl text-green-700">₹{paymentDetails.netSalary || 0}</p>
@@ -284,20 +501,38 @@ const EmployeePayment = () => {
 
             {/* Payment Status Badge */}
             <div className="mt-4">
-              <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
-                paymentDetails.paymentStatus === 'paid' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {paymentDetails.paymentStatus === 'paid' ? '✅ PAID' : '⏳ PENDING'}
+              <span
+                className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${paymentDetails.paymentStatus === "PAID"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-yellow-100 text-yellow-700"
+                  }`}
+              >
+                {paymentDetails.paymentStatus === "PAID" ? (
+                  <>
+                    ✅ PAID
+                    <button 
+                      onClick={handlePrintInvoice}
+                      disabled={!invoice}
+                      className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm transition"
+                    >
+                      🖨️ Print Invoice
+                    </button>
+                    {!invoice && (
+                      <span className="ml-2 text-xs text-gray-500">(Invoice loading...)</span>
+                    )}
+                  </>
+                ) : (
+                  "⏳ PENDING"
+                )}
               </span>
-              
-              {paymentDetails.paymentStatus === 'paid' && paymentDetails.paidAt && (
+
+              {paymentDetails.paymentStatus === 'PAID' && paymentDetails.PAIDAt && (
                 <div className="mt-3 text-sm text-gray-600">
-                  <p><strong>Paid on:</strong> {new Date(paymentDetails.paidAt).toLocaleDateString()}</p>
+                  <p><strong>PAID on:</strong> {new Date(paymentDetails.PAIDAt).toLocaleDateString()}</p>
                   <p><strong>Method:</strong> {paymentDetails.paymentMethod}</p>
                   <p><strong>Transaction ID:</strong> {paymentDetails.transactionId}</p>
                   {paymentDetails.remarks && <p><strong>Remarks:</strong> {paymentDetails.remarks}</p>}
+                  {invoice && <p><strong>Invoice No:</strong> {invoice.invoiceNo}</p>}
                 </div>
               )}
             </div>
@@ -305,7 +540,7 @@ const EmployeePayment = () => {
         )}
 
         {/* PAYMENT FORM */}
-        {paymentDetails && paymentDetails.paymentStatus !== 'paid' && !loading && (
+        {paymentDetails && paymentDetails.paymentStatus !== 'PAID' && !loading && (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Payment Method */}
@@ -402,18 +637,17 @@ const EmployeePayment = () => {
                   className={`${i % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50 transition`}
                 >
                   <td className="p-3 border text-sm">
-                    {p.paidAt ? new Date(p.paidAt).toLocaleDateString() : '-'}
+                    {p.PAIDAt ? new Date(p.PAIDAt).toLocaleDateString() : '-'}
                   </td>
                   <td className="p-3 border font-medium">{p.employee?.name || 'N/A'}</td>
                   <td className="p-3 border">{p.salaryMonth || '-'}</td>
                   <td className="p-3 border font-bold text-green-700">₹{p.netSalary || 0}</td>
                   <td className="p-3 border">{p.paymentMethod || '-'}</td>
                   <td className="p-3 border">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      p.paymentStatus === 'paid' 
-                        ? 'bg-green-100 text-green-700' 
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${p.paymentStatus === 'PAID'
+                        ? 'bg-green-100 text-green-700'
                         : 'bg-yellow-100 text-yellow-700'
-                    }`}>
+                      }`}>
                       {p.paymentStatus || 'pending'}
                     </span>
                   </td>

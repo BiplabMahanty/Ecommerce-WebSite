@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { successToast, errorToast } from "../utils/toastMessage";
 
 export default function EmployeeAddToRockstarPage() {
   const [shifts, setShifts] = useState([]);
@@ -61,9 +62,9 @@ export default function EmployeeAddToRockstarPage() {
   // Submit Selected Employees
   // --------------------------
   const submitEmployeeShift = async () => {
-    if (!selectedShift) return alert("Please select a shift first!");
+    if (!selectedShift) return errorToast("Please select a shift first!");
     if (selectedEmployees.length === 0)
-      return alert("Please select at least one employee!");
+      return errorToast("Please select at least one employee!");
 
     const payload = {
       dateKey: selectedShift.dateKey,
@@ -77,13 +78,13 @@ export default function EmployeeAddToRockstarPage() {
         payload
       );
 
-      alert("Employees added successfully!");
+      successToast("Employees added successfully!");
       console.log(res.data);
 
       setSelectedEmployees([]); // Reset selection
     } catch (error) {
       console.error(error);
-      alert("Error saving employee shift");
+      errorToast("Error saving employee shift");
     }
   };
 

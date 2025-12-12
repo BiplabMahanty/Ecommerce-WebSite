@@ -170,6 +170,7 @@ export default function AddRockstarShift ()  {
             <option value="sales">Sales</option>
             <option value="marketing">Marketing</option>
             <option value="finance">Finance</option>
+            <option value="Software Engineer">Software Engineer</option>
           </select>
         </div>
 

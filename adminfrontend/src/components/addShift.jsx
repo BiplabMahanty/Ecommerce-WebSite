@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { successToast, errorToast } from "../utils/toastMessage";
 
 export default function AddRockstarPage() {
   const [selectedShiftData, setSelectedShiftData] = useState({});
@@ -45,13 +46,13 @@ export default function AddRockstarPage() {
   // -------------------- SUBMIT BACKEND --------------------
   const submitToBackend = async () => {
     if (!startRange || !endRange)
-      return alert("Please select start & end date!");
+      return errorToast("Please select start & end date!");
 
     if (endRange < startRange)
-      return alert("End date must be after start!");
+      return errorToast("End date must be after start!");
 
     if (Object.keys(selectedShiftData).length === 0)
-      return alert("Select at least one shift from table!");
+      return errorToast("Select at least one shift from table!");
 
     try {
       let start = new Date(startRange);
@@ -85,10 +86,10 @@ export default function AddRockstarPage() {
         loop.setDate(loop.getDate() + 1);
       }
 
-      alert("Shift pattern successfully applied and saved!");
+      successToast("Shift pattern successfully applied and saved!");
     } catch (err) {
       console.error(err);
-      alert("Error saving shifts!");
+      successToast("Error saving shifts!");
     }
   };
 

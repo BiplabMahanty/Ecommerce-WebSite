@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { successToast, errorToast } from "../utils/toastMessage";
 
 export default function Logout() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function Logout() {
 
     // Redirect after a short delay
     setTimeout(() => {
+      errorToast("please logIn")
       navigate("/login");
     }, 1500);
   }, [navigate]);

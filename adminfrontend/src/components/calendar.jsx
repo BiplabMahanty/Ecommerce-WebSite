@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import axios from "axios";
+import { successToast, errorToast } from "../utils/toastMessage";
 
 export default function MonthlyCalendar() {
   const today = new Date();
@@ -89,7 +90,7 @@ export default function MonthlyCalendar() {
   // ------------------ SEND TO BACKEND ------------------
   const handleSubmit = async () => {
     if (!selectedDate || !shiftData.shiftName) {
-      alert("Select a date and shift first");
+      errorToast("Select a date and shift first");
       return;
     }
 
@@ -110,14 +111,14 @@ export default function MonthlyCalendar() {
         payload
       );
 
-      alert("Shift added successfully!");
+      successToast("Shift added successfully!");
 
       // highlight the saved date
       setSavedDates((prev) => [...prev, selectedDate]);
 
     } catch (err) {
       console.error("Error saving shift:", err);
-      alert("Failed to save shift");
+      errorToast("Failed to save shift");
     }
   };
 

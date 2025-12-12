@@ -7,7 +7,10 @@ import MonthlyCalendar from "./calendar";
 import Add from "./addShift";
 import EmployeeAddToRockstarPage from "./addEmp";
 import PayrollDashboard from "./PayrollStatus";
-import PaymentPage from "./PaymentSection"
+import PaymentPage from "./PaymentSection";
+import AllowancesPage from "./addAllowances";
+import AddEmployeePage from "./addEmployee";
+import EmployeeAttendancePage from "./EmployeeAttendancePage"
 export default function Sidebar() {
   const [activePage, setActivePage] = useState("dashboard");
 
@@ -61,12 +64,7 @@ export default function Sidebar() {
               <Calendar size={18} /> Rockstar Shift
             </button>
             {/* CALENDAR PAGE */}
-            <button
-              className={`w-full flex items-center gap-3 p-3 rounded-lg ${activePage === "MonthlyCalendar" ? "bg-yellow-500 text-black" : "hover:bg-white/10"}`}
-              onClick={() => setActivePage("MonthlyCalendar")}
-            >
-              <Calendar size={18} /> Monthly Calendar
-            </button>
+          
             <button
               className={`w-full flex items-center gap-3 p-3 rounded-lg ${activePage === "Add" ? "bg-yellow-500 text-black" : "hover:bg-white/10"}`}
               onClick={() => setActivePage("Add")}
@@ -79,7 +77,7 @@ export default function Sidebar() {
               className={`w-full flex items-center gap-3 p-3 rounded-lg ${activePage === "EmployeeAddToRockstarPage" ? "bg-yellow-500 text-black" : "hover:bg-white/10"}`}
               onClick={() => setActivePage("EmployeeAddToRockstarPage")}
             >
-              <Calendar size={18} /> EmployeeAdd
+              <Calendar size={18} /> Employee Add In RockStar
             </button>
 
              <button
@@ -89,14 +87,32 @@ export default function Sidebar() {
               <Calendar size={18} /> PayrollDetails
             </button>
 
-                 
+               <button
+              className={`w-full flex items-center gap-3 p-3 rounded-lg ${activePage === "AllowancesPage" ? "bg-yellow-500 text-black" : "hover:bg-white/10"}`}
+              onClick={() => setActivePage("AllowancesPage")}
+            >
+              <Calendar size={18} /> AllowancesPage
+            </button>  
 
-             <button
+            <button
+              className={`w-full flex items-center gap-3 p-3 rounded-lg ${activePage === "EmployeeAttendancePage" ? "bg-yellow-500 text-black" : "hover:bg-white/10"}`}
+              onClick={() => setActivePage("EmployeeAttendancePage")}
+            >
+              <Calendar size={18} /> EmployeeAttendancePage
+            </button>
+            <button
               className={`w-full flex items-center gap-3 p-3 rounded-lg ${activePage === "PaymentPage" ? "bg-yellow-500 text-black" : "hover:bg-white/10"}`}
               onClick={() => setActivePage("PaymentPage")}
             >
               <Calendar size={18} /> PaymentPage
             </button>
+
+              <button
+              className={`w-full flex items-center gap-3 p-3 rounded-lg ${activePage === "AddEmployeePage" ? "bg-yellow-500 text-black" : "hover:bg-white/10"}`}
+              onClick={() => setActivePage("AddEmployeePage")}
+            >
+              <Calendar size={18} /> new Employee Add
+            </button> 
           </nav>
         </div>
 
@@ -119,7 +135,9 @@ export default function Sidebar() {
         {activePage === "EmployeeAddToRockstarPage" && <EmployeeAddToRockstarPage/>}
         {activePage === "PayrollDashboard" && <PayrollDashboard />}
         {activePage === "PaymentPage" && <PaymentPage />}
-
+        {activePage === "AllowancesPage" && <AllowancesPage />}
+        {activePage === "AddEmployeePage" && <AddEmployeePage/>}
+        {activePage === "EmployeeAttendancePage" && <EmployeeAttendancePage/>}
         
       
 
