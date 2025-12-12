@@ -4,12 +4,14 @@ import Login from './components/Login'
 import LeaveRequest from './components/LeaveRequest';
 import Sidebar from './components/Sidebar';
 import ChangePasswordPage from './components/ChangePassword';
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
     <div className="App">
+      <Toaster position="top-right" reverseOrder={false} />
+      
       <Routes>
-
         <Route path='/' element={<Sidebar/>}/>
         <Route path='/login' element={<Login/>}/>
         <Route path='/leaveRequest' element={<LeaveRequest/>}/>

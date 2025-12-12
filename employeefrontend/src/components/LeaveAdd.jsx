@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link,useNavigate } from "react-router-dom";
 import axios from "axios";
+import {successToast,errorToast} from "../utils/toastMessage";
 export default function LeaveRequestPage() {
   
 
@@ -20,7 +21,7 @@ export default function LeaveRequestPage() {
 
   useEffect(() => {
     if (!employeeId) {
-      alert("Please login first");
+      errorToast("Please login first");
       window.location.href = "/login";
     } else {
       fetchLeaveRequests();
@@ -36,11 +37,11 @@ export default function LeaveRequestPage() {
       if (res.data.success) {
         setRequests(res.data.leave || []);
       } else {
-        alert(res.data.message || "Failed to load leave requests");
+        errorToast(res.data.message || "Failed to load leave requests");
       }
     } catch (error) {
       console.error(error);
-      alert("Error fetching leave requests");
+      errorToast("Error fetching leave requests");
     }
   };
 
@@ -49,20 +50,30 @@ export default function LeaveRequestPage() {
   e.preventDefault();
 
   if (!type || !startDate || !endDate || !reason) {
-    return alert("Please fill all fields");
+    return errorToast("Please fill all fields");
   }
+   const token = localStorage.getItem("employeeToken");
+    if (!token) return console.log("Please log in first!");
 
-  try {
-    const res = await axios.post("http://localhost:9000/api/employee/leaveRequest", {
+    const dataType={
       employeeId,
       type,
       startDate,
       endDate,
       reason,
-    });
+    }
+
+  try {
+    const res = await axios.post("http://localhost:9000/api/employee/leaveRequest", dataType, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+      );
 
     if (res.data.success) {
-      alert("Leave request submitted successfully!");
+      successToast("Leave request submitted successfully!");
 
       // ✅ Reset input fields
       setType("");
@@ -81,11 +92,11 @@ export default function LeaveRequestPage() {
       };
       setRequests((prev) => [newRequest, ...prev]);
     } else {
-      alert(res.data.message || "Failed to submit leave request");
+      errorToast(res.data.message || "Failed to submit leave request");
     }
   } catch (error) {
     console.error(error);
-    alert("Server error while submitting leave request");
+    errorToast("Server error while submitting leave request");
   }
 };
 

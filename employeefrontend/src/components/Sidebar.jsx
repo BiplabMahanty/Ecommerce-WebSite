@@ -2,25 +2,25 @@ import React, { useState, useEffect } from "react";
 import { Clock, Calendar, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import EmployeePanel from "./EmployeePanel";
+import EmployeePanel from "./face";
 import LeaveAdd from "./LeaveAdd";
 import Logout from "./LogOut";
 import DashboardPage from "./Dashboard";
-import AttendanceReportsPage from "./AttendanceDetails"
+import AttendanceReportsPage from "./AttendanceDetails";
 import { get } from "mongoose";
 import axios from "axios";
+
 
 export default function Sidebar() {
   const [activePage, setActivePage] = useState("EmployeePanel");
   const [employeeData, setEmployeeData] = useState(null);
-
-
-
+  const [photo,setPhoto]=useState(false)
   const navigate = useNavigate();
   const employee = JSON.parse(localStorage.getItem("employeeInfo"));
 
   const employeeId = localStorage.getItem("employeeId");
     console.log("Employee ID:", employeeId);
+
 
   if (!employee) {
     navigate("/login");
@@ -40,38 +40,50 @@ export default function Sidebar() {
       const res = await axios.get(`http://localhost:9000/api/employee/getEmployee/${employeeId}`, 
       
       );
-
-      
-
       if (res.data && res.data.success) {
         setEmployeeData(res.data.employee);
 
       }
-
-
     } catch (error) {
       console.error("Error fetching employee:", error);
     }
   };
   // Image URL
   const imageURL = employeeData?.employeeImage
-    ? `http://localhost:9000/${employeeData.employeeImage}`
+    ? `http://localhost:9000${employeeData.employeeImage}`
     : null;
     console.log("image>>>>>>>>>",employeeData);
  
   return (
     <div className="flex min-h-screen bg-[#E8F0F8]">
-      {/* SIDEBAR */}
+      {photo ? (
+        <div
+    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+    onClick={() => setPhoto(false)}
+  >
+    <div className="w-90 h-80 rounded-full overflow-hidden bg-gray-200 shadow-lg">
+      <img
+        src={imageURL}
+        alt="Profile"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  </div>
+      ) : (
+      
+      <>
+        {/* SIDEBAR */}
       <aside className="w-64 bg-[#0A1D3A] text-white p-6 flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-3 mb-8">
-            
+            {/* overflow-hidden rounded-full w-90 h-40 bg-gray-100 flex items-center justify-center */}
             {/* Employee Image */}
             {imageURL ? (
               <img
                 src={imageURL}
                 alt="Profile"
                 className="w-12 h-12 rounded-full object-cover border border-white"
+                onClick={()=>setPhoto(true)}
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-gray-300"></div>
@@ -143,6 +155,7 @@ export default function Sidebar() {
         </button>
       </aside>
 
+
       {/* MAIN CONTENT */}
       <div className="flex-1 p-5">
         {activePage === "EmployeePanel" && <EmployeePanel />}
@@ -152,6 +165,9 @@ export default function Sidebar() {
         {activePage === "attendanceDetails" && <AttendanceReportsPage />}
         
       </div>
+
+      </>
+      )}
     </div>
   );
 }

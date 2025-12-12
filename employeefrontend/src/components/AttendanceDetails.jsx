@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { useState,useEffect } from "react";
+import { successToast, errorToast } from "../utils/toastMessage";
 
 export default function AttendanceReportsPage() {
     const [activeReport, setActiveReport] = useState("monthly");
@@ -29,7 +30,7 @@ export default function AttendanceReportsPage() {
     };
 useEffect(() => {
           if (!employeeId) {
-            alert("Please login first");
+            errorToast("Please login first");
             return;
           }
           console.log("Employee ID from localStorage:", employeeId);
@@ -46,11 +47,11 @@ const fetchAttendance = async () => {
       if (res.data) {
           setAttendance(res.data.records);
       } else {
-          alert(res.data.message || "Failed to load attendance");
+          errorToast(res.data.message || "Failed to load attendance");
       }
   } catch (err) {
       console.error("Fetch error:", err);
-      alert("Server error while fetching attendance");
+      errorToast("Server error while fetching attendance");
   }
 };
 
