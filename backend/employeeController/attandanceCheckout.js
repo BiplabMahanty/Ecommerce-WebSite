@@ -3,8 +3,45 @@ const AttendanceModel = require("../models/attendance");
 const EmployeeModel = require("../models/employee");
 const RockstarShiftModel = require("../models/rockStarShift");
 const PaymentModel = require("../models/Payment");
+const LeaveRequestModel = require("../models/leaveRequest")
+const axios = require("axios");
 
-//checkIn multiple time
+
+async function getReadableAddress(latitude, longitude) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
+    const res = await axios.get(url);
+    return res.data.display_name; // FULL ADDRESS
+  } catch (err) {
+    console.error("Address fetch error:", err);
+    return "Unknown Location";
+  }
+}
+
+
+function calculateFaceDistance(descriptor1, descriptor2) {
+  if (!descriptor1 || !descriptor2 || descriptor1.length !== descriptor2.length) {
+    return Infinity;
+  }
+
+  let sum = 0;
+  for (let i = 0; i < descriptor1.length; i++) {
+    sum += Math.pow(descriptor1[i] - descriptor2[i], 2);
+  }
+  return Math.sqrt(sum);
+}
+
+// 🔥 Verify face match (threshold typically 0.6 for face-api.js)
+function verifyFaceMatch(storedDescriptor, currentDescriptor, threshold = 0.5) {
+  const distance = calculateFaceDistance(storedDescriptor, currentDescriptor);
+  return {
+    isMatch: distance < threshold,
+    distance: distance.toFixed(4),
+    confidence: Math.max(0, (1 - distance) * 100).toFixed(2) + '%'
+  };
+}
+
+
 
 // 🕒 Convert time to IST
 function getIndianDate() {
@@ -83,21 +120,72 @@ function buildIstDateFromDateKeyAndTime(dateKey, timeStr) {
 }
 
 // ------------------ CHECK-IN ------------------
+// Fixed checkIn function with proper location handling
 const checkIn = async (req, res) => {
   try {
-    const { employeeId } = req.body;
-    if (!employeeId) return res.status(400).json({ message: "employeeId required", success: false });
+    const { employeeId, faceDescriptor, location } = req.body;
+    
+    // Validate required fields
+    if (!employeeId) {
+      return res.status(400).json({ 
+        message: "employeeId required", 
+        success: false 
+      });
+    }
+
+    if (!faceDescriptor || !Array.isArray(faceDescriptor)) {
+      return res.status(400).json({
+        message: "Valid face descriptor required",
+        success: false
+      });
+    }
+
+    // Validate location
+    if (!location || !location.latitude || !location.longitude) {
+      return res.status(400).json({
+        message: "Location is required for check-in",
+        success: false
+      });
+    }
 
     const nowIST = getIndianDate();
     const dateKey = getIndianDateKey();
     const month = getIndianMonthKey();
+    const nextDay = getTomorrowDateKey();
 
-    const nextDay= getTomorrowDateKey();
+    // Check for approved leave
+    const leave = await LeaveRequestModel.findOne({ 
+      employeeId: employeeId, 
+      status: "approved" 
+    }) || null;
 
+    // Get employee and verify face registration
     const employee = await EmployeeModel.findById(employeeId);
-    if (!employee) return res.status(404).json({ message: "Employee not found", success: false });
+    if (!employee) {
+      return res.status(404).json({ 
+        message: "Employee not found", 
+        success: false 
+      });
+    }
 
-    // Find today's active/upcoming shift for this employee
+    if (!employee.faceRegistered || !employee.faceDescriptor || employee.faceDescriptor.length === 0) {
+      return res.status(403).json({
+        message: "Face not registered. Please contact admin to register your face.",
+        success: false
+      });
+    }
+
+    // Verify face match
+    const faceVerification = verifyFaceMatch(employee.faceDescriptor, faceDescriptor);
+    if (!faceVerification.isMatch) {
+      return res.status(403).json({
+        message: `Face verification failed. Distance: ${faceVerification.distance}. Please try again or contact admin.`,
+        success: false,
+        distance: faceVerification.distance
+      });
+    }
+    console.log(`✅ Face verified for employee ${employee.name} - Distance: ${faceVerification.distance}`);
+
     const shift = await RockstarShiftModel.findOne({
       employees: employeeId,
       dateKey,
@@ -110,10 +198,13 @@ const checkIn = async (req, res) => {
         success: false,
       });
     }
+
+    // Get or create payment record
     let payment = await PaymentModel.findOne({
       employee: employeeId,
       salaryMonth: month,
     });
+
     if (!payment) {
       payment = new PaymentModel({
         employee: employeeId,
@@ -123,25 +214,34 @@ const checkIn = async (req, res) => {
         remainingDue: 0,
         overtimeMinites: 0,
         overLateTime: 0,
-        basicSalary: 0,
-        leaveDays:0,
-        leaveDeductions:0,
-        absentDeductions:0,
-        totalWorkingDays:30,
-        overtimePay:0,
-        lateTimeDeductions:0,
-      }); 
+        leaveDays: 0,
+        leaveDeductions: 0,
+        absentDeductions: 0,
+        totalWorkingDays: 30,
+        overtimePay: 0,
+        lateTimeDeductions: 0,
+        basicSalary: employee.basicSalary,
+        hraAllowances: employee.hraAllowances,
+        daAllowances: employee.daAllowances,
+        taAllowances: employee.taAllowances,
+        maAllowances: employee.maAllowances,
+        spAllowances: employee.spAllowances,
+        pf: employee.pf,
+        esic: employee.esic,
+        professionalTex: employee.professionalTex,
+        totalAllowances: employee.taAllowances,
+      });
     }
 
-    // Parse shift start/end as IST moments on the shift.dateKey
+    // Parse shift times
     const parsedShiftStart = buildIstDateFromDateKeyAndTime(dateKey, shift.startTime);
     const parsedShiftEnd = buildIstDateFromDateKeyAndTime(dateKey, shift.endTime);
-    console.log("parsedShiftStart",parsedShiftStart)
-    console.log("parsedShiftEnd",parsedShiftEnd)
-    console.log("nowIST",nowIST)
 
+    console.log("Shift Start:", parsedShiftStart);
+    console.log("Shift End:", parsedShiftEnd);
+    console.log("Current Time (IST):", nowIST);
 
-    // Validate check-in is within shift window (+/- 15 minutes)
+    // Validate check-in time
     if (!isWithinShiftTime(nowIST, parsedShiftStart, parsedShiftEnd)) {
       return res.status(400).json({
         message: `⏰ Check-in not allowed. Your ${shift.shiftName} is ${shift.startTime}–${shift.endTime} (+15 min grace).`,
@@ -149,39 +249,74 @@ const checkIn = async (req, res) => {
       });
     }
 
-    const existPrevious=await AttendanceModel.findOne({employee:employeeId,dateKey:nextDay})
-    const existRockstar=await RockstarShiftModel.findOne({employee:employeeId,dateKey:nextDay})
-
-
     // Check if already checked in today
-    const existing = await AttendanceModel.findOne({ employee: employeeId, dateKey });
-    if (!existing){
-      payment.presentDays=payment.presentDays+1;
-      console.log(">?>?>?",payment.presentDays)
+    const existing = await AttendanceModel.findOne({ 
+      employee: employeeId, 
+      dateKey 
+    });
 
-      if (existRockstar) {
-
-        if (!existPrevious) {
-             payment.absentDays=payment.absentDays+1;
-        }
-        
-      }else{
-        payment.leaveDays=payment.leaveDays+1;
-        payment.totalWorkingDays=payment.totalWorkingDays-1;
-      }
-
-     
-
-      await payment.save();
-
-    } else{
+    if (existing) {
       return res.status(400).json({
         message: "⚠️ You have already checked in today.",
         success: false,
       });
     }
 
-    // Create attendance
+    // Handle previous day attendance
+    const existPrevious = await AttendanceModel.findOne({ 
+      employee: employeeId, 
+      dateKey: nextDay 
+    });
+    const existRockstar = await RockstarShiftModel.find({ 
+      employees: employeeId, 
+      dateKey: nextDay 
+    });
+
+    // Update payment record
+    payment.presentDays = payment.presentDays + 1;
+
+    if (existRockstar && existRockstar.length > 0) {
+      if (!existPrevious) {
+        let leaveDays = [];
+        try {
+          if (Array.isArray(leave?.allLeaveDays)) {
+            leaveDays = leave.allLeaveDays;
+          }
+        } catch (e) {
+          leaveDays = [];
+        }
+
+        const previousDay = new Date();
+        previousDay.setDate(previousDay.getDate() - 1);
+
+        const isOnLeave = Array.isArray(leaveDays)
+          ? leaveDays.some(d =>
+              new Date(d).toDateString() === previousDay.toDateString()
+            )
+          : false;
+
+        payment.absentDays = isOnLeave
+          ? payment.absentDays
+          : payment.absentDays + 1;
+      }
+    } else {
+      payment.leaveDays = payment.leaveDays + 1;
+      payment.totalWorkingDays = payment.totalWorkingDays - 1;
+    }
+
+    await payment.save();
+
+    // Get human-readable address
+    let humanAddress = "Unknown Location";
+    try {
+      humanAddress = await getReadableAddress(location.latitude, location.longitude);
+      console.log("✅ Resolved address:", humanAddress);
+    } catch (error) {
+      console.error("Failed to resolve address:", error);
+      // Continue with "Unknown Location" rather than failing
+    }
+
+    // Create attendance record
     const newAttendance = new AttendanceModel({
       employee: employeeId,
       date: nowIST,
@@ -190,60 +325,53 @@ const checkIn = async (req, res) => {
       status: "present",
       shift: shift._id,
       overTime: 0,
-      overtimePay:"100/h",
-       earlyBy: "0",
-      lateBy: "0",
+      overtimePay: "100/h",
+      earlyBy: 0,
+      lateBy: 0,
+      checkInLocation: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      },
+      checkInAddress: humanAddress,
     });
 
-    // Early: check if employee checked in BEFORE shift start
+    // Calculate early/late status
     if (nowIST < parsedShiftStart) {
       newAttendance.early = true;
       const diffMs = parsedShiftStart - nowIST;
       const earlyMinutes = Math.floor(diffMs / 60000);
-      newAttendance.earlyBy = String(earlyMinutes);
+      newAttendance.earlyBy = earlyMinutes;
     } else {
       newAttendance.early = false;
-      newAttendance.earlyBy = "0";
+      newAttendance.earlyBy = 0;
     }
 
-    // Late: check if employee checked in AFTER shift start
     if (nowIST > parsedShiftStart) {
       newAttendance.late = true;
       const diffMs = nowIST - parsedShiftStart;
       const lateMinutes = Math.floor(diffMs / 60000);
-      newAttendance.lateBy = String(lateMinutes);
+      newAttendance.lateBy = lateMinutes;
     } else {
       newAttendance.late = false;
-      newAttendance.lateBy = "0";
+      newAttendance.lateBy = 0;
     }
+    
+    console.log("shiftEnd  time ",shift.endTime)
+    console.log("shift time ",parsedShiftEnd)
+    console.log("shift time start",parsedShiftStart)
 
     await newAttendance.save();
-     const basicSalary = Number(employee.salary) || 0;
-     const totalDays = Number(payment.totalWorkingDays) || 1; // Prevent 0 division
-     const present = Number(payment.presentDays) || 0;
-     const absent = Number(payment.absentDays) || 0;
-     const leaves = Number(payment.leaveDays) || 0;
 
-
+    // Calculate salary deductions
+    const basicSalary = payment.basicSalary;
+    const totalDays = Number(payment.totalWorkingDays) || 1;
+    const absent = Number(payment.absentDays) || 0;
     const dailySalary = basicSalary / totalDays;
 
-  // Deductions
-  payment.absentDeductions = dailySalary * absent;
-  payment.leaveDeductions = dailySalary * leaves;
-
-  console.log("absentDeductions",payment.absentDeductions)
-  console.log("leaveDeductions",payment.leaveDeductions)
-
-  // Base salary
-  payment.basicSalary = basicSalary;
-    
-
-    // Update basic salary (keeps numeric fields safe)
-    payment.basicSalary = Number(employee.salary || 0);
-
+    payment.absentDeductions = dailySalary * absent;
     await payment.save();
 
-    // If shift was upcoming, mark active
+    // Update shift status
     if (shift.status === "upcoming") {
       shift.status = "active";
       await shift.save();
@@ -253,28 +381,99 @@ const checkIn = async (req, res) => {
       message: "✅ Check-in successful",
       success: true,
       attendance: newAttendance,
+      matchConfidence: faceVerification.confidence
     });
+
   } catch (err) {
     console.error("❌ Check-in Error:", err);
-    res.status(500).json({ message: "Internal Server Error", success: false, error: err.message });
+    res.status(500).json({ 
+      message: "Internal Server Error", 
+      success: false, 
+      error: err.message 
+    });
   }
 };
 
 // ------------------ CHECK-OUT ------------------
+// Fixed checkOut function with location support
 const checkOut = async (req, res) => {
   try {
-    const { employeeId } = req.body;
-    if (!employeeId) return res.status(400).json({ message: "employeeId required", success: false });
+    const { employeeId, faceDescriptor, location } = req.body;
+    
+    if (!employeeId) {
+      return res.status(400).json({ 
+        message: "employeeId required", 
+        success: false 
+      });
+    }
+
+    if (!faceDescriptor || !Array.isArray(faceDescriptor)) {
+      return res.status(400).json({
+        message: "Valid face descriptor required",
+        success: false
+      });
+    }
+
+    // Validate location
+    if (!location || !location.latitude || !location.longitude) {
+      return res.status(400).json({
+        message: "Location is required for check-out",
+        success: false
+      });
+    }
 
     const nowIST = getIndianDate();
     const dateKey = getIndianDateKey();
     const month = getIndianMonthKey();
 
-    // Find today's attendance and populate shift reference
-    const attendance = await AttendanceModel.findOne({ employee: employeeId, dateKey }).populate("shift");
-    if (!attendance) return res.status(404).json({ message: "No check-in found for today", success: false });
+    // Verify employee face
+    const employee = await EmployeeModel.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ 
+        message: "Employee not found", 
+        success: false 
+      });
+    }
 
-    // Determine shift end time (from shift in attendance or by finding active shift)
+    if (!employee.faceRegistered || !employee.faceDescriptor || employee.faceDescriptor.length === 0) {
+      return res.status(403).json({
+        message: "Face not registered. Please contact admin.",
+        success: false
+      });
+    }
+
+    // Verify face match
+    const faceVerification = verifyFaceMatch(employee.faceDescriptor, faceDescriptor);
+    if (!faceVerification.isMatch) {
+      return res.status(403).json({
+        message: `Face verification failed. Distance: ${faceVerification.distance}. Please try again.`,
+        success: false,
+        distance: faceVerification.distance
+      });
+    }
+    console.log(`✅ Face verified for checkout - ${employee.name} - Distance: ${faceVerification.distance}`);
+
+    // Find today's attendance
+    const attendance = await AttendanceModel.findOne({ 
+      employee: employeeId, 
+      dateKey 
+    }).populate("shift");
+
+    if (!attendance) {
+      return res.status(404).json({ 
+        message: "No check-in found for today", 
+        success: false 
+      });
+    }
+
+    if (attendance.checkOut) {
+      return res.status(400).json({
+        message: "You have already checked out today",
+        success: false
+      });
+    }
+
+    // Get shift information
     const shift = attendance.shift || (await RockstarShiftModel.findOne({
       employees: employeeId,
       dateKey,
@@ -282,38 +481,66 @@ const checkOut = async (req, res) => {
     }));
 
     if (!shift) {
-      return res.status(500).json({ message: "Shift info not found for checkout", success: false });
+      return res.status(500).json({ 
+        message: "Shift info not found for checkout", 
+        success: false 
+      });
     }
 
-    // Build parsed shift end as IST moment
+    // Parse shift end time
     const parsedShiftEnd = buildIstDateFromDateKeyAndTime(dateKey, shift.endTime);
 
-    // Ensure numeric lateBy / overTime fields exist and are numbers
+    // Initialize numeric fields
     attendance.lateBy = Number(attendance.lateBy || 0);
     attendance.overTime = Number(attendance.overTime || 0);
 
+    // Calculate overtime/late time
     if (nowIST < parsedShiftEnd) {
+      // Checking out early
       const diffMs = parsedShiftEnd - nowIST;
       const minutesUntilEnd = Math.floor(diffMs / 60000);
       attendance.lateBy = Number(attendance.lateBy || 0) + minutesUntilEnd;
     } else if (nowIST > parsedShiftEnd) {
+      // Checking out after shift end
       const diffMs = nowIST - parsedShiftEnd;
-      const lateMinutes = Math.floor(diffMs / 60000);
+      const overtimeMinutes = Math.floor(diffMs / 60000);
       const prevLate = Number(attendance.lateBy || 0);
 
-      if (prevLate < lateMinutes) {
-        attendance.overTime = lateMinutes - prevLate;
+      if (prevLate < overtimeMinutes) {
+        attendance.overTime = overtimeMinutes - prevLate;
         attendance.lateBy = 0;
       } else {
-        attendance.lateBy = prevLate - lateMinutes;
+        attendance.lateBy = prevLate - overtimeMinutes;
         attendance.overTime = 0;
       }
     }
 
+    // Get human-readable address for checkout location
+    let humanAddress = "Unknown Location";
+    try {
+      humanAddress = await getReadableAddress(location.latitude, location.longitude);
+      console.log("✅ Resolved checkout address:", humanAddress);
+    } catch (error) {
+      console.error("Failed to resolve checkout address:", error);
+    }
+
+    // Update attendance with checkout info
     attendance.checkOut = nowIST;
+    attendance.checkOutLocation = {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    };
+    
+    // Store checkout address separately if you want, or append to existing address
+    if (!attendance.checkOutAddress) {
+      attendance.checkOutAddress = humanAddress;
+    } else {
+      attendance.address = `Check-in: ${attendance.address} | Check-out: ${humanAddress}`;
+    }
+
     await attendance.save();
 
-    // Update monthly payment record with overtime etc.
+    // Update payment record
     let payment = await PaymentModel.findOne({
       employee: employeeId,
       salaryMonth: month,
@@ -328,57 +555,42 @@ const checkOut = async (req, res) => {
         remainingDue: 0,
         overtimeMinites: 0,
         overLateTime: 0,
-        basicSalary: Number(employee.salary || 0),
       });
     }
 
-    // Initialize numeric fields safely
+    // Update overtime and late time
     payment.overtimeMinites = Number(payment.overtimeMinites || 0) + Number(attendance.overTime || 0);
-        console.log("overtimeMinites",payment.overtimeMinites)
-
     payment.overLateTime = Number(payment.overLateTime || 0) + Number(attendance.lateBy || 0);
-        console.log("overLateTime",payment.overLateTime)
 
-        const overLate=Number(payment.overLateTime);
-        const overtime=Number(payment.overtimeMinites );
+    const overLate = Number(payment.overLateTime);
+    const overtime = Number(payment.overtimeMinites);
 
-
-    payment.lateTimeDeductions= (overLate/60)*100;
-    console.log("late",payment.lateTimeDeductions)
-    payment.overtimePay= (overtime / 60)*100;
-    console.log("overtimePay",payment.overtimePay)
-
-
-    console.log("totalDeductions",payment.totalDeductions)
-
-
-    console.log("netSalary",payment.netSalary)
-
-
-
-
-
+    payment.lateTimeDeductions = (overLate / 60) * 100;
+    payment.overtimePay = (overtime / 60) * 100;
 
     await payment.save();
-    console.log("totalDeductions",payment.totalDeductions)
 
-
-    // Mark shift as completed/active if needed
-    if (attendance.shift) {
-      attendance.shift.status = "active";
-      await attendance.shift.save().catch(() => {});
-    }
+    // Update shift status
+    // if (attendance.shift) {
+    //   attendance.shift.status = "completed";
+    //   await attendance.shift.save().catch(() => {});
+    // }
 
     res.status(200).json({
       message: "✅ Check-out successful",
       success: true,
       attendance,
+      matchConfidence: faceVerification.confidence
     });
+
   } catch (err) {
     console.error("❌ Check-out Error:", err);
-    res.status(500).json({ message: "Internal Server Error", success: false, error: err.message });
+    res.status(500).json({ 
+      message: "Internal Server Error", 
+      success: false, 
+      error: err.message 
+    });
   }
 };
 
 module.exports = { checkIn, checkOut };
-

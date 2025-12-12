@@ -1,5 +1,8 @@
 const LeaveRequestModel = require("../models/leaveRequest");
 const EmployeeModel = require("../models/employee");
+const SuperAdminModel = require("../models/superAdmin");
+
+//fix multiple leave request 
 
 const leaveRequest = async (req, res) => {
   try {
@@ -11,15 +14,6 @@ const leaveRequest = async (req, res) => {
         success: false,
       });
     }
-
-    // Find latest leave record for employee
-    const lastLeave = await LeaveRequestModel
-      .findOne({ employeeId })
-      .sort({ createdAt: -1 });   // returns SINGLE document
-
-    console.log("Last leave record:", lastLeave);
-
-    // Validate employee
     const employee = await EmployeeModel.findById(employeeId);
     if (!employee) {
       return res.status(404).json({
@@ -27,47 +21,229 @@ const leaveRequest = async (req, res) => {
         success: false,
       });
     }
+    const superAdmin = await SuperAdminModel.findOne()
 
-    // Calculate requested leave days
-    const start = new Date(startDate);
-    const end = new Date(endDate);
 
-    const diff = Math.abs(end - start);
-    const wantLeave = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+    // Find latest leave record for employee
+    let lastLeave = await LeaveRequestModel
+      .findOne({ employeeId })
+      .sort({ createdAt: -1 });   // returns SINGLE document
 
-    // If no past leave record → employee starts with 12 leave
-    const availableLeave = lastLeave ? lastLeave.totalLeave : 12;
+    console.log("Last leave record:", lastLeave);
+    if (!lastLeave) {
+      if (employee.department == "it department") {
 
-    console.log("Available Leave:", availableLeave);
-    console.log("Requested:", wantLeave);
+        console.log("if 1")
+        lastLeave = new LeaveRequestModel({
+          employeeId,
+          type,
+          startDate,
+          endDate,
+          reason,
+          totalLeave: superAdmin.itDepartmentLeave,
+          remaningLeave: superAdmin.itDepartmentLeave,
+         wantLeave:0,
+         usedLeave:0,
+        })
 
-    // Validate leave balance
-    if (availableLeave < wantLeave) {
-      return res.status(400).json({
-        success: false,
-        message: `Leave request denied. You have only ${availableLeave} leave days.`,
-      });
+      }
+      else if (employee.department == "HR") {
+
+        console.log("if 2")
+
+        lastLeave = new LeaveRequestModel({
+          employeeId,
+          type,
+          startDate,
+          endDate,
+          reason,
+          totalLeave: superAdmin.HRLeave,
+          remaningLeave: superAdmin.HRLeave,
+          wantLeave:0,
+          usedLeave:0,
+        })
+
+      }
+      else {
+        console.log("if 3")
+
+        lastLeave = new LeaveRequestModel({
+          employeeId,
+          type,
+          startDate,
+          endDate,
+          reason,
+          totalLeave: superAdmin.otherLeave,
+          remaningLeave: superAdmin.otherLeave,
+          wantLeave:0,
+          usedLeave:0,
+        })
+      }
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      const diff = Math.abs(end - start);
+      const wantLeave = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+
+
+
+      let allDates = [];
+
+      let current = new Date(start);
+
+      while (current <= end) {
+        allDates.push(new Date(current)); // push a copy
+        current.setDate(current.getDate() + 1); // move to next day
+      }
+
+      console.log(allDates);
+      lastLeave.allLeaveDays.push(...allDates);
+
+      lastLeave.wantLeave = wantLeave
+      await lastLeave.save();
     }
 
-    // Create new leave request
-    const newLeave = new LeaveRequestModel({
-      employeeId,
-      type,
-      startDate,
-      endDate,
-      reason,
-      wantLeave,
-      totalLeave: availableLeave, // Save latest leave balance
-    });
 
-    await newLeave.save();
+
+   
+
+
+    else {
+       console.log("remaning leave",lastLeave.remaningLeave)
+    console.log("totalleave",lastLeave.totalLeave)
+    const totalLeave=lastLeave.totalLeave;
+    const remaning=lastLeave.remaningLeave;
+      if (employee.department == "it department") {
+
+        console.log("if 4")
+
+        const newLeave = new LeaveRequestModel({
+          employeeId,
+          type,
+          startDate,
+          endDate,
+          reason,
+          totalLeave:totalLeave,
+          remaningLeave:remaning,
+          wantLeave: 0,
+         usedLeave:lastLeave.usedLeave,
+        })
+        await newLeave.save();
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const diff = Math.abs(end - start);
+        const wantLeave = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+
+        let allDates = [];
+
+        let current = new Date(start);
+
+        while (current <= end) {
+          allDates.push(new Date(current)); // push a copy
+          current.setDate(current.getDate() + 1); // move to next day
+        }
+
+        console.log(allDates);
+        newLeave.allLeaveDays.push(...allDates);
+
+        newLeave.wantLeave = wantLeave
+
+        await newLeave.save();
+      }
+      else if (employee.department == "HR") {
+
+        console.log("if 5")
+        const totalLeave=lastLeave.totalLeave;
+        const remaningLeave=lastLeave.remaningLeave;
+        const newLeave = new LeaveRequestModel({
+          employeeId,
+          type,
+          startDate,
+          endDate,
+          reason,
+          totalLeave: totalLeave,
+          remaningLeave: remaningLeave,
+          wantLeave,
+         usedLeave:lastLeave.usedLeave,
+        })
+        await newLeave.save();
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const diff = Math.abs(end - start);
+        const wantLeave = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+
+
+
+        let allDates = [];
+
+        let current = new Date(start);
+
+        while (current <= end) {
+          allDates.push(new Date(current)); // push a copy
+          current.setDate(current.getDate() + 1); // move to next day
+        }
+
+        console.log(allDates);
+        newLeave.allLeaveDays.push(...allDates);
+
+        newLeave.wantLeave = wantLeave
+
+        await newLeave.save();
+
+      }
+      else {
+        console.log("if 6")
+        const totalLeave=lastLeave.totalLeave;
+        const remaningLeave=lastLeave.remaningLeave;
+        const newLeave = new LeaveRequestModel({
+          employeeId,
+          type,
+          startDate,
+          endDate,
+          reason,
+          totalLeave: totalLeave,
+          remaningLeave: remaningLeave,
+          wantLeave:0,
+          usedLeave:lastLeave.usedLeave,
+
+        })
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const diff = Math.abs(end - start);
+        const wantLeave = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+
+
+
+        let allDates = [];
+
+        let current = new Date(start);
+
+        while (current <= end) {
+          allDates.push(new Date(current)); // push a copy
+          current.setDate(current.getDate() + 1); // move to next day
+        }
+
+        console.log(allDates);
+        newLeave.allLeaveDays.push(...allDates);
+
+        newLeave.wantLeave = wantLeave
+
+        await newLeave.save();
+      }
+    }
+
+
 
     res.status(201).json({
       message: "Leave request submitted successfully",
       success: true,
-      leave: newLeave,
-      availableLeave,
-      requestedDays: wantLeave,
+      leave: lastLeave,
+      availableLeave: lastLeave.remaningLeave,
+      
     });
 
   } catch (error) {

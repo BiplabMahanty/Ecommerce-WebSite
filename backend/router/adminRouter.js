@@ -26,6 +26,10 @@ const employeePayment = require("../adminConroller/employeePayment");
 const paySalary = require("../adminConroller/employeePayment");
 const {getPayment} = require("../adminConroller/getPayment");
 const { getAllPayment } = require("../adminConroller/getAllPayment");
+const payAllowances = require("../adminConroller/allowancesSet");
+const { getAttendanceEmployee } = require("../adminConroller/getAttendanceEmp");
+const { getAttaendanceById } = require("../adminConroller/getAttendanceById");
+const editCheckOut = require("../adminConroller/editEmployeeCheckOut");
 
 
 
@@ -82,6 +86,13 @@ router.post("/paySalary",paySalary)
 
 router.get("/getPayment/:id",getPayment)
 router.get("/getAllPayments",getAllPayment)
+
+router.post("/payAllowances",payAllowances)
+router.get("/attendance/:employeeId",getAttendanceEmployee);
+router.get("/attendance/details/:attendanceId",getAttaendanceById);
+
+router.post("/editCheckOut",editCheckOut);
+ 
 
 
 module.exports=router

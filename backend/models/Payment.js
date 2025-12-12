@@ -7,6 +7,7 @@ const paymentSchema = new mongoose.Schema(
       ref: "Employee",
       required: true,
     },
+    name :{type:String},
 
     // Salary month: YYYY-MM
     salaryMonth: {
@@ -16,7 +17,17 @@ const paymentSchema = new mongoose.Schema(
 
     // Base salary details
     basicSalary: { type: Number, required: true },
-    allowances: { type: Number, default: 0 },
+    totalAllowances: { type: Number, default: 0 },
+    hraAllowances:{type:Number,default:0},
+    daAllowances:{type:Number,default:0},
+    taAllowances:{type:Number,default:0},
+    maAllowances:{type:Number,default:0},
+    spAllowances:{type:Number,default:0},
+
+    pf:{type:Number},
+    esic:{type:Number},
+    professionalTex:{type:Number},
+
 
     // Attendance-based calculations
     totalWorkingDays: { type: Number, default: 0 },
@@ -40,8 +51,8 @@ const paymentSchema = new mongoose.Schema(
     // Payment Status
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid"],
-      default: "pending",
+      enum: ["PENDING", "PAID"],
+      default: "PENDING",
     },
 
     paymentMethod: {
@@ -71,7 +82,7 @@ const roundNumber = (num) => Math.round(Number(num) || 0);
 paymentSchema.pre("save", function (next) {
   // Round all numeric values before saving
   this.basicSalary = roundNumber(this.basicSalary);
-  this.allowances = roundNumber(this.allowances);
+  this.totalAllowances = roundNumber(this.totalAllowances);
 
   this.totalWorkingDays = roundNumber(this.totalWorkingDays);
   this.presentDays = roundNumber(this.presentDays);
@@ -87,7 +98,7 @@ paymentSchema.pre("save", function (next) {
 
   // Calculate totals
   this.grossSalary =
-    this.basicSalary + this.allowances + this.overtimePay;
+    this.basicSalary + this.totalAllowances + this.overtimePay;
 
   this.totalDeductions =
     this.leaveDeductions + this.absentDeductions + this.lateTimeDeductions;

@@ -10,6 +10,7 @@ const path = require("path");
 
 const adminRouter=require("./router/adminRouter")
 const employeeRouter=require("./router/employeeRouter")
+const superAdminRouter=require("./router/superAdmin")
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -22,6 +23,7 @@ app.use(express.json());
 
 app.use("/api/admin", adminRouter);
 app.use("/api/employee", employeeRouter);
+app.use("/api/superAdmin", superAdminRouter);
 
 
 app.use((err, req, res, next) => {

@@ -20,54 +20,71 @@ const editLeaveRequest = async (req, res) => {
       });
     }
 
-    if (status==="rejected") {
+    // if (status==="rejected") {
         
-        if (leave.status === "approved") {
-             leave.totalLeave = leave.totalLeave + leave.wantLeave;
-        if (leave.totalLeave <= 0){
+    //     if (leave.status === "approved") {
+    //          leave.totalLeave = leave.totalLeave + leave.wantLeave;
+    //     if (leave.totalLeave <= 0){
                
-             leave.totalLeave = 0;
+    //          leave.totalLeave = 0;
 
-      }
-      await leave.save();
+    //   }
+    //   await leave.save();
     
-      }  // prevent negative
-    }
+    //   }  // prevent negative
+    // }
 
-     if (status==="pending") {
+    //  if (status==="pending") {
         
-        if (leave.status === "approved") {
-             leave.totalLeave = leave.totalLeave + leave.wantLeave;
-        if (leave.totalLeave <= 0){
+    //     if (leave.status === "approved") {
+    //          leave.totalLeave = leave.totalLeave + leave.wantLeave;
+    //     if (leave.totalLeave <= 0){
                
-             leave.totalLeave = 0;
+    //          leave.totalLeave = 0;
 
-      }
-      await leave.save();
+    //   }
+    //   await leave.save();
     
-      }  // prevent negative
-    }
+    //   }  // prevent negative
+    // }
 
     
     if (status==="approved") {
         
-        if (leave.status === "rejected") {
-             leave.totalLeave = leave.totalLeave - leave.wantLeave;
-        if (leave.totalLeave <= 0){
-               
-             leave.totalLeave = 0;
+      if (leave.status==="pending") {
+         leave.usedLeave=leave.usedLeave+leave.wantLeave;
+       leave.remaningLeave=leave.remaningLeave-leave.wantLeave;
+      }
 
       }
-      await leave.save();
-    
-      }  // prevent negative
+
+    else if (status==="rejected") {    
+      if (leave.status==="pending") {
+        return
+      }
+      }
+
+    else if (status==="rejected") {
+       if (leave.status==="approved") {
+         leave.usedLeave=leave.usedLeave-leave.wantLeave;
+         leave.remaningLeave=leave.remaningLeave+leave.wantLeave;
+      }
     }
 
-   
-
-
-    
-    
+    else if (status==="approved") {
+      if (leave.status==="rejected")
+       {leave.usedLeave=leave.usedLeave+leave.wantLeave;
+       leave.remaningLeave=leave.remaningLeave-leave.wantLeave;}
+    }
+     else if (status==="pending") {
+      if (leave.status==="rejected")
+      return
+    }
+     else if (status==="pending") {
+      if (leave.status==="approved")
+      leave.usedLeave=leave.usedLeave-leave.wantLeave;
+         leave.remaningLeave=leave.remaningLeave+leave.wantLeave;
+    }
     // ✅ Update other fields
     leave.status = status;
     leave.approvedBy = adminId;
@@ -80,15 +97,18 @@ const editLeaveRequest = async (req, res) => {
       message: `Leave ${status} successfully`,
       leave,
     });
-  } catch (error) {
+}
+   catch (error) {
     console.error("Error verifying leave:", error);
     res.status(500).json({
       success: false,
       message: "Server error while verifying leave request",
       error: error.message,
     });
-  }
-};
+  
+}
+}
+
 
 
 

@@ -1,0 +1,12 @@
+const mongoose=require("mongoose");
+
+const superAdminSchema=new mongoose.Schema(
+    {
+        itDepartmentLeave:{type:Number},
+        HRLeave:{type:Number},
+        otherLeave:{type:Number},
+    },
+    {timestampse:true}
+);
+const SuperAdminModel=mongoose.model("SuperAdmin",superAdminSchema);
+module.exports=SuperAdminModel;

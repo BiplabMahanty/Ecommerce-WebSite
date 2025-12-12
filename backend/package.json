@@ -11,13 +11,22 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "canvas": "^3.2.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "face-api.js": "^0.22.2",
+    "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.3",
     "multer": "^2.0.2",
-    "nodemon": "^3.1.11"
+    "nodemailer": "^7.0.11",
+    "nodemon": "^3.1.11",
+    "path": "^0.12.7",
+    "pdf-creator-node": "^2.3.5",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.17.2"
   }
 }

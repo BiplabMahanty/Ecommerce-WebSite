@@ -63,8 +63,9 @@ const verifyLeaveRequest = async (req, res) => {
 
     // ✅ Only subtract from total if approved
     if (status === "approved") {
-      leave.totalLeave = leave.totalLeave - leave.wantLeave;
-      if (leave.totalLeave < 0) leave.totalLeave = 0; // prevent negative
+        leave.usedLeave=leave.usedLeave+leave.wantLeave;
+       leave.remaningLeave=leave.remaningLeave-leave.wantLeave;
+      if (leave.remaningLeave < 0) leave.remaningLeave = 0; // prevent negative
     }
 
     // ✅ Update other fields

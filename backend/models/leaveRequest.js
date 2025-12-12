@@ -15,8 +15,10 @@ const leaveRequestSchema = new mongoose.Schema(
     totalLeave: {
       type: Number,
       required: true,
-      default:12// default single-day leave if not calculated
+      default:12
     },
+    remaningLeave:{type:Number},
+    usedLeave:{type:Number},
     wantLeave:{
         type: Number,
       required: true,
@@ -29,6 +31,9 @@ const leaveRequestSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    allLeaveDays:[
+      {type:Date}
+    ],
     reason: {
       type: String,
       required: true,
@@ -47,6 +52,12 @@ const leaveRequestSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+leaveRequestSchema.pre("save",function(next){
+  this.remaningLeave=this.totalLeave-this.usedLeave;
+
+  next();
+})
 
 const LeaveRequestModel = mongoose.model("LeaveRequest", leaveRequestSchema);
 module.exports=LeaveRequestModel;
