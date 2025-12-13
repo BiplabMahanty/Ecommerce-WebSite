@@ -1,92 +1,72 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Clock, Calendar, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
-import EmployeePanel from "./face";
-import LeaveAdd from "./LeaveAdd";
-import Logout from "./LogOut";
-import DashboardPage from "./Dashboard";
-import AttendanceReportsPage from "./AttendanceDetails";
-import { get } from "mongoose";
 import axios from "axios";
 
-
 export default function Sidebar() {
-  const [activePage, setActivePage] = useState("EmployeePanel");
-  const [employeeData, setEmployeeData] = useState(null);
-  const [photo,setPhoto]=useState(false)
   const navigate = useNavigate();
   const employee = JSON.parse(localStorage.getItem("employeeInfo"));
-
   const employeeId = localStorage.getItem("employeeId");
-    console.log("Employee ID:", employeeId);
 
-
-  if (!employee) {
-    navigate("/login");
-  }
+  const [employeeData, setEmployeeData] = useState(null);
+  const [photo, setPhoto] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("employeeToken");
     if (!token) navigate("/login");
 
-    // Fetch employee details (including image)
     fetchEmployeeDetails();
-
   }, [navigate]);
 
   const fetchEmployeeDetails = async () => {
     try {
-      const res = await axios.get(`http://localhost:9000/api/employee/getEmployee/${employeeId}`, 
-      
+      const res = await axios.get(
+        `http://localhost:9000/api/employee/getEmployee/${employeeId}`
       );
-      if (res.data && res.data.success) {
+      if (res.data?.success) {
         setEmployeeData(res.data.employee);
-
       }
-    } catch (error) {
-      console.error("Error fetching employee:", error);
+    } catch (err) {
+      console.error(err);
     }
   };
-  // Image URL
+
   const imageURL = employeeData?.employeeImage
     ? `http://localhost:9000${employeeData.employeeImage}`
     : null;
-    console.log("image>>>>>>>>>",employeeData);
- 
+
+  const linkClass = ({ isActive }) =>
+    `w-full flex items-center gap-3 p-3 rounded-lg ${
+      isActive ? "bg-yellow-500 text-black" : "hover:bg-white/10"
+    }`;
+
   return (
     <div className="flex min-h-screen bg-[#E8F0F8]">
-      {photo ? (
+
+      {/* IMAGE MODAL */}
+      {photo && (
         <div
-    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
-    onClick={() => setPhoto(false)}
-  >
-    <div className="w-90 h-80 rounded-full overflow-hidden bg-gray-200 shadow-lg">
-      <img
-        src={imageURL}
-        alt="Profile"
-        className="w-full h-full object-cover"
-      />
-    </div>
-  </div>
-      ) : (
-      
-      <>
-        {/* SIDEBAR */}
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+          onClick={() => setPhoto(false)}
+        >
+          <div className="w-80 h-80 rounded-full overflow-hidden bg-gray-200">
+            <img src={imageURL} className="w-full h-full object-cover" />
+          </div>
+        </div>
+      )}
+
+      {/* SIDEBAR */}
       <aside className="w-64 bg-[#0A1D3A] text-white p-6 flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-3 mb-8">
-            {/* overflow-hidden rounded-full w-90 h-40 bg-gray-100 flex items-center justify-center */}
-            {/* Employee Image */}
             {imageURL ? (
               <img
                 src={imageURL}
-                alt="Profile"
-                className="w-12 h-12 rounded-full object-cover border border-white"
-                onClick={()=>setPhoto(true)}
+                className="w-12 h-12 rounded-full object-cover border"
+                onClick={() => setPhoto(true)}
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-gray-300"></div>
+              <div className="w-12 h-12 rounded-full bg-gray-300" />
             )}
 
             <div>
@@ -95,79 +75,34 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="space-y-4">
-
-            <button
-              className={`w-full flex items-center gap-3 p-3 rounded-lg ${
-                activePage === "dashboard"
-                  ? "bg-yellow-500 text-black"
-                  : "hover:bg-white/10"
-              }`}
-              onClick={() => setActivePage("dashboard")}
-            >
+            <NavLink to="/employee" end className={linkClass}>
               <User size={18} /> Dashboard
-            </button>
+            </NavLink>
 
-            <button
-              className={`w-full flex items-center gap-3 p-3 rounded-lg ${
-                activePage === "EmployeePanel"
-                  ? "bg-yellow-500 text-black"
-                  : "hover:bg-white/10"
-              }`}
-              onClick={() => setActivePage("EmployeePanel")}
-            >
+            <NavLink to="/employee/attendance" className={linkClass}>
               <Clock size={18} /> Attendance
-            </button>
+            </NavLink>
 
-            <button
-              className={`w-full flex items-center gap-3 p-3 rounded-lg ${
-                activePage === "leave"
-                  ? "bg-yellow-500 text-black"
-                  : "hover:bg-white/10"
-              }`}
-              onClick={() => setActivePage("leave")}
-            >
+            <NavLink to="/employee/leave" className={linkClass}>
               <Calendar size={18} /> Leave
-            </button>
-            <button
-              className={`w-full flex items-center gap-3 p-3 rounded-lg ${
-                activePage === "attendanceDetails"
-                  ? "bg-yellow-500 text-black"
-                  : "hover:bg-white/10"
-              }`}
-              onClick={() => setActivePage("attendanceDetails")}
-            >
+            </NavLink>
+
+            <NavLink to="/employee/attendance-details" className={linkClass}>
               <Calendar size={18} /> Attendance Details
-            </button>
+            </NavLink>
+
+            <NavLink to="/employee/logout" className={linkClass}>
+              Logout
+            </NavLink>
           </nav>
         </div>
-
-        <button
-          className={`w-full flex items-center gap-3 p-3 rounded-lg ${
-            activePage === "logout"
-              ? "bg-yellow-500 text-black"
-              : "hover:bg-white/10"
-          }`}
-          onClick={() => setActivePage("logout")}
-        >
-          Log Out
-        </button>
       </aside>
 
-
       {/* MAIN CONTENT */}
-      <div className="flex-1 p-5">
-        {activePage === "EmployeePanel" && <EmployeePanel />}
-        {activePage === "leave" && <LeaveAdd />}
-        {activePage === "logout" && <Logout />}
-        {activePage === "dashboard" && <DashboardPage />}
-        {activePage === "attendanceDetails" && <AttendanceReportsPage />}
-        
-      </div>
-
-      </>
-      )}
+      <main className="flex-1 p-5 overflow-y-auto">
+        <Outlet />
+      </main>
     </div>
   );
 }

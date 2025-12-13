@@ -14,6 +14,8 @@ export default function LeaveRequestPage() {
   const [reason, setReason] = useState("");
   const [requests, setRequests] = useState([]);
 
+  console.log("request",requests)
+
   // ✅ Example: employeeId stored in localStorage after login
   const employeeId = localStorage.getItem("employeeId");
 
@@ -27,6 +29,8 @@ export default function LeaveRequestPage() {
       fetchLeaveRequests();
     }
   }, [employeeId]);
+
+ 
 
   // ✅ Fetch all leave requests for logged-in employee
   const fetchLeaveRequests = async () => {
@@ -100,9 +104,10 @@ export default function LeaveRequestPage() {
   }
 };
 
-
   return (
     <div className="p-8">
+      
+
       <h2 className="text-2xl font-bold mb-6">Leave Request</h2>
 
       {/* Leave Form */}
