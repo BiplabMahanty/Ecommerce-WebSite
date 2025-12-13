@@ -1,9 +1,10 @@
+// adminfrontend/src/App.js
 import './App.css';
 import { Routes, Route, Navigate } from "react-router-dom";
 import './index.css';
-import AddRockstarShift from './components/AddRockstarShift';
-import Sidebar from './components/Sidebar';
 import Login from './verificationPage/Login';
+import Sidebar from './components/Sidebar';
+import { AdminRoutes } from './routes/AdminRoutes';
 import { Toaster } from "react-hot-toast";
 
 function App() {
@@ -12,15 +13,13 @@ function App() {
       <Toaster position="top-right" reverseOrder={false} />
 
       <Routes>
+        <Route path="/" element={<Navigate to="/admin/login" />} />
+        <Route path="/admin/login" element={<Login />} />
 
-        <Route path='/' element={<Navigate to='/Sidebar' />} />
-
-        <Route path='/login' element={<Login />} />
-
-        <Route path='/Sidebar' element={<Sidebar />} />
-
-        <Route path='/AddRockstarShift' element={<AddRockstarShift />} />
-
+        {/* ADMIN LAYOUT */}
+        <Route path="/admin" element={<Sidebar />}>
+          {AdminRoutes}
+        </Route>
       </Routes>
     </div>
   );

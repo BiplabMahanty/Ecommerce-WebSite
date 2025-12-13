@@ -366,7 +366,7 @@ const EmployeePayment = () => {
       });
 
       if (response.data.success) {
-        errorToast('✅ Payment successful!');
+        successToast('✅ Payment successful!');
         setPaymentDetails(response.data.payment);
         setPaymentForm({ method: 'Cash', note: '' });
         fetchAllPayments();
@@ -453,47 +453,73 @@ const EmployeePayment = () => {
             <h3 className="font-semibold text-lg mb-4 text-gray-800">Salary Breakdown - {selectedMonth}</h3>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              
+              <div className="bg-white p-1 rounded-lg shadow-sm">
+                <p className="text-gray-500 text-xs">SP Allowances</p>
+                <p className="text-lg text-cyan-800">₹{paymentDetails.spAllowances || 0}</p>
+              </div>
+
+              <div className="bg-white p-1 rounded-lg shadow-sm">
+                <p className="text-gray-500 text-xs">MA Allowances</p>
+                <p className="text-lg text-cyan-800">₹{paymentDetails.maAllowances || 0}</p>
+              </div>
+
+              <div className="bg-white p-1 rounded-lg shadow-sm">
+                <p className="text-gray-500 text-xs">TA Allowances</p>
+                <p className=" text-lg text-cyan-800">₹{paymentDetails.taAllowances || 0}</p>
+              </div>
+
+              <div className="bg-white p-1 rounded-lg shadow-sm">
+                <p className="text-gray-500 text-xs">DA Allowances</p>
+                <p className="text-lg text-cyan-800">₹{paymentDetails.daAllowances || 0}</p>
+              </div>
+
+              <div className="bg-white p-1 rounded-lg shadow-sm">
+                <p className="text-gray-500 text-xs">HRA Allowances</p>
+                <p className="text-lg text-cyan-800">₹{paymentDetails.hraAllowances || 0}</p>
+              </div>
+
+              <div className="bg-white p-1 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Basic Salary</p>
                 <p className="font-bold text-lg text-gray-800">₹{paymentDetails.basicSalary || 0}</p>
               </div>
 
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              <div className="bg-white p-1 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Working Days</p>
                 <p className="font-bold text-lg text-gray-800">{paymentDetails.totalWorkingDays || 0}</p>
               </div>
 
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              <div className="bg-white p-1 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Present Days</p>
                 <p className="font-bold text-lg text-green-600">{paymentDetails.presentDays || 0}</p>
               </div>
 
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              <div className="bg-white p-1 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Absent Days</p>
                 <p className="font-bold text-lg text-red-600">{paymentDetails.absentDays || 0}</p>
               </div>
 
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              <div className="bg-white p-1 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Overtime (mins)</p>
                 <p className="font-bold text-lg text-blue-600">{paymentDetails.overtimeMinites || 0}</p>
               </div>
 
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              <div className="bg-white p-1 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Late Time (mins)</p>
                 <p className="font-bold text-lg text-orange-600">{paymentDetails.overLateTime || 0}</p>
               </div>
 
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              <div className="bg-white p-1 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Gross Salary</p>
                 <p className="font-bold text-lg text-gray-800">₹{paymentDetails.grossSalary || 0}</p>
               </div>
 
-              <div className="bg-white p-3 rounded-lg shadow-sm">
+              <div className="bg-white p-1 rounded-lg shadow-sm">
                 <p className="text-gray-500 text-xs">Total Deductions</p>
                 <p className="font-bold text-lg text-red-600">-₹{paymentDetails.totalDeductions || 0}</p>
               </div>
 
-              <div className="bg-green-100 p-3 rounded-lg shadow-sm border-2 border-green-500">
+              <div className="bg-green-100 p-1 rounded-lg shadow-sm border-2 border-green-500">
                 <p className="text-green-700 text-xs font-semibold">NET SALARY</p>
                 <p className="font-bold text-2xl text-green-700">₹{paymentDetails.netSalary || 0}</p>
               </div>

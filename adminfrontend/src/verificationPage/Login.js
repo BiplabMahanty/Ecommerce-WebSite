@@ -110,7 +110,7 @@ function Login() {
         generateSuccess("Login successful!");
         console.log("🎉 Admin login successful! Redirecting to dashboard...");
         
-        setTimeout(() => navigate("/Sidebar"), 500);
+        setTimeout(() => navigate("/admin/"), 500);
       } else {
         generateError(res.data.message || "Login failed");
       }
