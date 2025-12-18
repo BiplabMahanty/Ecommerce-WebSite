@@ -1,0 +1,74 @@
+/* ===============================
+   FULL PAGE DASHBOARD LAYOUT
+================================== */
+.dashboard {
+  height: 100vh;                /* Full screen height */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: "Inter", sans-serif;
+  color: #000;
+  background: #f5f7fa;          /* clean background */
+  overflow: hidden;
+}
+
+/* Layout: Sidebar + Content */
+.dashboard-layout {
+  display: flex;
+  height: 100%;                 /* Full height */
+  width: 100%;
+}
+
+/* Dashboard Content Wrapper */
+.dashboard-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;             /* Scrollable content */
+  background: #f5f7fa;
+}
+
+/* Cards Row */
+.cards-row {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+  flex-wrap: wrap;              /* Responsive for small screens */
+}
+
+/* Card Styles (DashboardCard Wrapper) */
+.cards-row > div {
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.cards-row > div:hover {
+  transform: scale(1.03);
+}
+
+/* Scrollbar styling (Optional but modern) */
+.dashboard-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-content::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+.dashboard-content::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 10px;
+}
+
+.dashboard-content::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* ===============================
+   RESPONSIVE DESIGN
+================================== */
+@media (max-width: 768px) {
+  .cards-row {
+    flex-direction: column;
+  }
+}

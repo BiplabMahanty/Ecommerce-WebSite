@@ -1,0 +1,239 @@
+/* ===============================
+   FULL PAGE ADMIN LEAVE MANAGEMENT
+================================== */
+.admin-leave-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: "Inter", sans-serif;
+  color: #000;
+  background: #f5f7fa;      /* Matches dashboard style */
+  padding: 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Scrollbar styling */
+.admin-leave-container::-webkit-scrollbar {
+  width: 8px;
+}
+.admin-leave-container::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 10px;
+}
+.admin-leave-container::-webkit-scrollbar-track {
+  background: #e5e7eb;
+}
+
+/* ===============================
+   SUMMARY CARDS (stats row)
+================================== */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.summary-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: 0.25s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-3px);
+}
+
+.summary-card p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.summary-card h2 {
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.summary-card.yellow { border-left: 5px solid #facc15; }
+.summary-card.green { border-left: 5px solid #22c55e; }
+.summary-card.red   { border-left: 5px solid #ef4444; }
+
+/* Icons */
+.icon {
+  width: 32px;
+  height: 32px;
+}
+
+.yellow-icon { color: #ca8a04; }
+.green-icon {  color: #15803d; }
+.red-icon {    color: #b91c1c; }
+
+/* ===============================
+   TABLE CARD (Leave list)
+================================== */
+.table-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.table-card h3 {
+  margin-bottom: 15px;
+  color: #374151;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ===============================
+   TABLE STYLES
+================================== */
+.leave-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.leave-table th,
+.leave-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+  text-align: left;
+}
+
+.leave-table th {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Badges */
+.badge {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.badge.approved { background: #dcfce7; color: #166534; }
+.badge.rejected { background: #fee2e2; color: #991b1b; }
+.badge.pending  { background: #fef9c3; color: #854d0e; }
+
+/* ===============================
+   BUTTONS
+================================== */
+.btn {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s ease;
+}
+
+.btn.outline {
+  background: #f3f4f6;
+}
+
+.btn.success {
+  background: #22c55e;
+  color: white;
+}
+
+.btn.danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn:hover {
+  opacity: 0.9;
+  transform: scale(1.03);
+}
+
+/* Empty State */
+.empty {
+  text-align: center;
+  padding: 40px 0;
+  color: #6b7280;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.4;
+  margin-bottom: 10px;
+}
+
+/* ===============================
+   DIALOG POPUP
+================================== */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.dialog {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 90%;
+  max-width: 480px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+  animation: pop 0.25s ease-out;
+}
+
+/* Dialog animation */
+@keyframes pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to {   transform: scale(1); opacity: 1; }
+}
+
+.dialog p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.dialog textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  resize: none;
+  min-height: 80px;
+  margin-top: 10px;
+}
+
+.dialog-footer {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ===============================
+   RESPONSIVE DESIGN
+================================== */
+@media (max-width: 768px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 768px) {
+  .cards-row {
+    flex-direction: column;
+  }
+}
