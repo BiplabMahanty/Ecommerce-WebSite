@@ -18,6 +18,8 @@ const verifyRole = (roles = []) => {
         }
 
         req.user = decoded;
+       
+
         next();
         
 

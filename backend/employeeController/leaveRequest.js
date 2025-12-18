@@ -14,6 +14,7 @@ const leaveRequest = async (req, res) => {
         success: false,
       });
     }
+
     const employee = await EmployeeModel.findById(employeeId);
     if (!employee) {
       return res.status(404).json({
@@ -21,8 +22,15 @@ const leaveRequest = async (req, res) => {
         success: false,
       });
     }
-    const superAdmin = await SuperAdminModel.findOne()
 
+    if (new Date(startDate) > new Date(endDate)) {
+       return res.status(400).json({
+       success: false,
+       message: "Start date cannot be greater than end date",
+       });
+    }
+
+    const superAdmin = await SuperAdminModel.findOne()
 
     // Find latest leave record for employee
     let lastLeave = await LeaveRequestModel
@@ -42,8 +50,8 @@ const leaveRequest = async (req, res) => {
           reason,
           totalLeave: superAdmin.itDepartmentLeave,
           remaningLeave: superAdmin.itDepartmentLeave,
-         wantLeave:0,
-         usedLeave:0,
+          wantLeave:0,
+          usedLeave:0,
         })
 
       }
@@ -132,7 +140,7 @@ const leaveRequest = async (req, res) => {
         const start = new Date(startDate);
         const end = new Date(endDate);
 
-        const diff = Math.abs(end - start);
+        const diff = Math.abs(end - start); 
         const wantLeave = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
 
         let allDates = [];

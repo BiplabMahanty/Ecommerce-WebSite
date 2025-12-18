@@ -1,12 +1,12 @@
 const LeaveRequestModel = require("../models/leaveRequest");
-
+const EmployeeLeaveBalance = require("../models/employeeLeaveBalance");
 // ✅ Get all leave requests
 const getLeaveRequests = async (req, res) => {
   try {
     console.log("Fetching all leave requests...");
 
     const leaveRequests = await LeaveRequestModel.find({})
-      .populate("employeeId", "name email department") // optional: populate employee details
+      .populate("employeeId", "name email department") 
       .sort({ createdAt: -1 })
       .lean();
 
@@ -42,6 +42,8 @@ const getLeaveRequests = async (req, res) => {
 
 
 
+
+
 const verifyLeaveRequest = async (req, res) => {
   try {
     const { leaveId, adminId, status, comment } = req.body;
@@ -49,7 +51,7 @@ const verifyLeaveRequest = async (req, res) => {
     if (!leaveId || !adminId || !status) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields (leaveId, adminId, status)",
+        message: "Missing required fields",
       });
     }
 
@@ -61,14 +63,31 @@ const verifyLeaveRequest = async (req, res) => {
       });
     }
 
-    // ✅ Only subtract from total if approved
     if (status === "approved") {
-        leave.usedLeave=leave.usedLeave+leave.wantLeave;
-       leave.remaningLeave=leave.remaningLeave-leave.wantLeave;
-      if (leave.remaningLeave < 0) leave.remaningLeave = 0; // prevent negative
+      const balance = await EmployeeLeaveBalance.findOne({
+        employeeId: leave.employeeId,
+        leaveType: leave.leaveType,
+      });
+
+      if (!balance) {
+        return res.status(400).json({
+          success: false,
+          message: "Leave balance not found for this leave type",
+        });
+      }
+
+      if (balance.remainingLeave < leave.wantLeave) {
+        return res.status(400).json({
+          success: false,
+          message: "Insufficient leave balance",
+        });
+      }
+
+      balance.usedLeave += leave.wantLeave;
+      balance.remainingLeave -= leave.wantLeave;
+      await balance.save();
     }
 
-    // ✅ Update other fields
     leave.status = status;
     leave.approvedBy = adminId;
     leave.comment = comment || "";
@@ -80,15 +99,19 @@ const verifyLeaveRequest = async (req, res) => {
       message: `Leave ${status} successfully`,
       leave,
     });
+
   } catch (error) {
-    console.error("Error verifying leave:", error);
+    console.error("Verify leave error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error while verifying leave request",
+      message: "Server error",
       error: error.message,
     });
   }
 };
+
+module.exports = { verifyLeaveRequest };
+
 
 
 

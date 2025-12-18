@@ -5,7 +5,7 @@ const getLeaveRequest = async (req, res) => {
     const {employeeId}=req.body;
 
     const leave = await LeaveRequestModel.find({employeeId:employeeId})
-      .populate("type startDate endDate reason status approvedBy")
+    
       .sort({ createdAt: -1 })
       .lean();
 

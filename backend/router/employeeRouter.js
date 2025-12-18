@@ -14,29 +14,45 @@
     const { getEmployee } = require("../employeeController/getEmployee");
     const { getAttaendanceByMonth } = require("../employeeController/getAttendanceByMonth");
     const invoice = require("../employeeController/getInvoice");
-    // Employee check-in
-
+    const verifyRole = require("../middleware/authMiddleware");
+    const { getInvoiceByMonth } = require("../employeeController/getInvoiceByMonth");
+    const invoiceId = require("../employeeController/getInvoiceById");
+    const { leaveRequestEmployee } = require("../employeeController/leaveRequestEmployee");
+    const { getLeaveType } = require("../employeeController/getLeaveType");
+const { getLeaveTotal } = require("../employeeController/getTotalLeave");
+     
     router.post("/login",login)
 
 
-    router.post("/checkin", checkIn);
-    router.post("/checkout", checkOut);
+    router.post("/checkIn",verifyRole(["employee"]),checkIn);
+    router.post("/checkout",verifyRole(["employee"]), checkOut);
     // Face registration endpoint (accepts employeeId + faceDescriptor array)
     router.post("/registerFace", registerFace);
 
-    router.post("/leaveRequest",leaveRequest)
-    router.post("/getAttendance", getAttendance);
-    router.post("/getLeaveRequest", getLeaveRequest);
-    router.post("/change-password", ChangePassword);
+    router.post("/leaveRequest",verifyRole(["employee"]),leaveRequest)
+    router.post("/getAttendance",verifyRole(["employee"]), getAttendance);
+    router.post("/getLeaveRequest",verifyRole(["employee"]), getLeaveRequest);
+    router.post("/change-password",verifyRole(["employee"]), ChangePassword);
 
 
-    router.get("/getEmployee/:employeeId", getEmployee);
+    router.get("/getEmployee/:employeeId",verifyRole(["employee"]), getEmployee);
 
-    router.get("/attendance/:id", getAttaendanceByMonth);
+    router.get("/attendance/:id",verifyRole(["employee"]), getAttaendanceByMonth);
 
    
 
     router.post("/invoice",invoice);
+    router.get("/getInvoiceByMonth/:id",verifyRole(["employee"]),getInvoiceByMonth);
+    router.get("/invoice/download/:invoiceId",verifyRole(["employee"]),invoiceId);
+
+
+    router.post("/leaveRequestEmployee",leaveRequestEmployee);
+    router.get("/getLeaveType",verifyRole(["employee"]),getLeaveType);
+    
+    router.get("/getLeaveTotal/:employeeId",verifyRole(["employee"]),getLeaveTotal);
+
+
+
 
 
     module.exports = router;

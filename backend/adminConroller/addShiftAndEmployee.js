@@ -55,10 +55,16 @@ const addEmpInRockstar = async (req, res) => {
     const {dateKey,employees,supervisor } = req.body;
 
     // ✅ Validation
-    if (!dateKey||!employees?.length ) {
+    if (!dateKey) {
       return res.status(400).json({
         success: false,
         message: "All required fields must be provided",
+      });
+    }
+    if (!employees ) {
+      return res.status(400).json({
+        success: false,
+        message: "!!All required fields must be provided",
       });
     }
     const Shift= await RockstarShift.findOne({dateKey:dateKey});

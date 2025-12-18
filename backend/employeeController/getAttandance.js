@@ -5,7 +5,7 @@ const getAttendance = async (req, res) => {
     const { employeeId } = req.body;
 
     // Validate employeeId
-    if (!employeeId) {
+    if (!employeeId) {  
       return res.status(400).json({
         success: false,
         message: "Employee ID is required",
@@ -27,6 +27,23 @@ const getAttendance = async (req, res) => {
         count: 0,
       });
     }
+    // const formattedAttendance = attendance.map((record) => {
+    //   const formattedPunches = record.punches.map((punch) => ({   
+    //     in: punch.in ? new Date(punch.in).toLocaleTimeString("en-IN") : null,
+    //     out: punch.out ? new Date(punch.out).toLocaleTimeString("en-IN") : null,
+    //   }));
+    const todayAttendance = await AttendanceModel.findOne({
+      employee: employeeId,
+      date: new Date().toISOString().split("T")[0],
+    });
+
+    if (todayAttendance) {
+      console.log("Today's Attendance Record:", todayAttendance);
+    } else {
+      console.log("No attendance record found for today.");
+    }
+      
+  
 
     console.log(`✅ Found ${attendance.length} attendance records for employee ${employeeId}`);
 
@@ -34,6 +51,7 @@ const getAttendance = async (req, res) => {
       success: true,
       message: "Attendance fetched successfully",
       attendance,
+      todayAttendance,
       count: attendance.length,
     });
   } catch (error) {

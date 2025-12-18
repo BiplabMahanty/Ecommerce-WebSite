@@ -30,69 +30,76 @@ const payAllowances = require("../adminConroller/allowancesSet");
 const { getAttendanceEmployee } = require("../adminConroller/getAttendanceEmp");
 const { getAttaendanceById } = require("../adminConroller/getAttendanceById");
 const editCheckOut = require("../adminConroller/editEmployeeCheckOut");
+const { createLeaveType } = require("../adminConroller/adminLeaveSet");
+const { addDepartment } = require("../adminConroller/addDepartment");
+const { getAllDepartments } = require("../adminConroller/getAllDepertments");
+const { getLeaveType } = require("../adminConroller/getLeaveType");
+const {getShiftById} = require("../adminConroller/getShiftById");
+const createPayroll = require("../adminConroller/createPayroll");
 
 
-
-router.post("/signup",  signup);
-router.post("/login",  login);
+//varification routes
+router.post("/signup", signup);
+router.post("/login", login);
 router.post("/verifyOtp", verifyOtp);
 
+//admin for employee routes
+router.post("/addEmployee", upload.single("image"),verifyRole(["admin"]), addEmployee);
+router.get("/getAllEmployee", verifyRole(["admin"]), getEmployee);
+router.get("/getEmployeeByDepartment/:department", verifyRole(["admin"]),getEmployeeByDepartment);
 
-router.post("/addEmployee",upload.single("image"), addEmployee);
-/*router.post("/getAttaendance", getAttaendance);
-router.post("/verifyLeaveRequest", verifyLeaveRequest);
+//shift routes
+router.post("/addRockstarShift", verifyRole(["admin"]),addRockstarShift);
+router.post("/addEmpInRockstar",verifyRole(["admin"]), addEmpInRockstar);
+router.post("/addShift", verifyRole(["admin"]),addShift);
+router.get("/getShift", verifyRole(["admin"]),getShift);
+router.get("/getShiftById/:shiftId", verifyRole(["admin"]),getShiftById);
 
-console.log("shift",shift)
-    console.log("time",todayIST)*/
-router.get("/getLeaveRequests", getLeaveRequests);
-
-// ✅ POST approve/reject
-router.post("/verifyLeaveRequest", verifyLeaveRequest);
-
-
-router.post("/addRockstarShift", addRockstarShift);
-
-
-router.get("/getAllEmployee",getEmployee);
+//leave routes
 router.get("/getLeave", getLeave);
+router.get("/getLeaveRequests", verifyRole(["admin"]), getLeaveRequests);
+router.post("/verifyLeaveRequest", verifyRole(["admin"]), verifyLeaveRequest);
+router.post("/editLeaveRequest", verifyRole(["admin"]), editLeaveRequest);
+router.get("/department/:department", verifyRole(["admin"]), getDepartmentLeave);
+router.get("/getLeaveTotal/:employeeId", getLeaveTotal);
 
+//attendance routes
+router.get("/getAttaendance", getAttaendance);
+router.get("/attendance/:employeeId", verifyRole(["admin"]), getAttendanceEmployee);
+router.get("/attendance/details/:attendanceId", verifyRole(["admin"]), getAttaendanceById);
+router.get("/getAttaendanceByMonthOverTime/:id", getAttaendanceByMonthOverTime);
+router.get("/getAttaendanceByMonthLate/:id", getAttaendanceByMonthLate);
+router.post("/editCheckOut", verifyRole(["admin"]), editCheckOut);
 
+//payment routes
+router.post("/paySalary",verifyRole(["admin"]), paySalary);
+router.post("/payAllowances",verifyRole(["admin"]), payAllowances);
+router.get("/getPayment/:id",verifyRole(["admin"]), getPayment);
+router.get("/getAllPayments", verifyRole(["admin"]), getAllPayment);
 router.get("/getPayrollAlerts", getPayrollAlerts);
 router.get("/getPendingRequests", getPendingRequests);
 router.get("/getActiveLeaves", getActiveLeaves);
 
+router.post("/createPayroll", createPayroll);
 
-router.get("/getAttaendance", getAttaendance);
+router.post("/createLeaveType",createLeaveType);
+   
 
-router.get("/department/:department", getDepartmentLeave);
-
-router.get("/getEmployeeByDepartment/:department", getEmployeeByDepartment);
-
-router.get("/getLeaveTotal/:employeeId", getLeaveTotal);
-
-
-router.post("/addEmpInRockstar", addEmpInRockstar);
-router.post("/addShift", addShift);
-
-router.get("/getShift",getShift)
-
-router.post("/editLeaveRequest",editLeaveRequest)
-
-router.get("/getAttaendanceByMonthOverTime/:id",getAttaendanceByMonthOverTime)
-
-router.get("/getAttaendanceByMonthLate/:id",getAttaendanceByMonthLate)
-
-router.post("/paySalary",paySalary)
-
-router.get("/getPayment/:id",getPayment)
-router.get("/getAllPayments",getAllPayment)
-
-router.post("/payAllowances",payAllowances)
-router.get("/attendance/:employeeId",getAttendanceEmployee);
-router.get("/attendance/details/:attendanceId",getAttaendanceById);
-
-router.post("/editCheckOut",editCheckOut);
- 
+ router.post("/addDepartment",addDepartment);
+ router.get("/getAllDepartments",verifyRole(["admin"]),getAllDepartments);
 
 
-module.exports=router
+ router.get("/getLeaveType",verifyRole(["admin"]),getLeaveType);
+
+module.exports = router;
+
+
+
+
+
+
+
+
+
+
+

@@ -24,6 +24,7 @@ const paymentSchema = new mongoose.Schema(
     maAllowances:{type:Number,default:0},
     spAllowances:{type:Number,default:0},
 
+    compolsoryDeductions:{ type: Number, default: 0 },
     pf:{type:Number},
     esic:{type:Number},
     professionalTex:{type:Number},

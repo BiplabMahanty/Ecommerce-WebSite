@@ -4,6 +4,8 @@ const http = require("http");
 const app = express();
 require("dotenv").config();
 require("./models/db");
+require("./cron/attendanceCron");
+
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
